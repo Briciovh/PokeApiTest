@@ -1,5 +1,6 @@
 package com.example.pokeapitest.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
@@ -14,11 +15,15 @@ import androidx.compose.ui.unit.dp
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
 
 @Composable
-fun PokemonItem(name: String) {
+fun PokemonItem(
+    name: String,
+    onItemClick: (String) -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable { onItemClick(name) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -37,6 +42,6 @@ fun PokemonItem(name: String) {
 @Composable
 fun PokemonItemPreview() {
     PokeApiTestTheme {
-        PokemonItem(name = "Pikachu")
+        PokemonItem(name = "Pikachu", onItemClick = {})
     }
 }
