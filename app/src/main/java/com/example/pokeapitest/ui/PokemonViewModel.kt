@@ -17,16 +17,22 @@ class PokemonViewModel @Inject constructor(
     private val _pokemonNames = MutableStateFlow<List<String>>(emptyList())
     val pokemonNames: StateFlow<List<String>> = _pokemonNames
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     init {
         loadPokemon()
     }
 
     private fun loadPokemon() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 _pokemonNames.value = getPokemonListUseCase()
             } catch (e: Exception) {
                 // Handle error
+            } finally {
+                _isLoading.value = false
             }
         }
     }

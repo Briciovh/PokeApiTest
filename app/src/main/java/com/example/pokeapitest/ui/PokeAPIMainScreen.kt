@@ -1,5 +1,6 @@
 package com.example.pokeapitest.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -59,11 +60,16 @@ fun PokeAPIMainScreen(
 ) {
     PokeApiTestTheme {
         val names by viewModel.pokemonNames.collectAsState()
+        val isLoading by viewModel.isLoading.collectAsState()
+
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            PokemonList(names, onPokemonClick)
+            Box(modifier = Modifier.fillMaxSize()) {
+                PokemonList(names, onPokemonClick)
+                LoadingOverlay(isLoading = isLoading)
+            }
         }
     }
 }
