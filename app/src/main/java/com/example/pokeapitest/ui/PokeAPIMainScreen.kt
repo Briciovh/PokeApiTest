@@ -5,8 +5,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -14,9 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.pokeapitest.R
@@ -29,26 +39,55 @@ sealed class Screen(val route: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokeAPINavHost() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Screen.PokemonList.route) {
-        composable(Screen.PokemonList.route) {
-            val viewModel: PokemonViewModel = hiltViewModel()
-            PokeAPIMainScreen(
-                viewModel = viewModel,
-                onPokemonClick = { name ->
-                    navController.navigate(Screen.PokemonDetail.createRoute(name))
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val canNavigateBack = navController.previousBackStackEntry != null
+
+    PokeApiTestTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Pokedex") },
+                    navigationIcon = {
+                        if (canNavigateBack) {
+                            IconButton(onClick = { navController.navigateUp() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = Screen.PokemonList.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Screen.PokemonList.route) {
+                    val viewModel: PokemonViewModel = hiltViewModel()
+                    PokeAPIMainScreen(
+                        viewModel = viewModel,
+                        onPokemonClick = { name ->
+                            navController.navigate(Screen.PokemonDetail.createRoute(name))
+                        }
+                    )
                 }
-            )
-        }
-        composable(
-            route = Screen.PokemonDetail.route,
-            arguments = listOf(navArgument("name") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val name = backStackEntry.arguments?.getString("name") ?: ""
-            val viewModel: PokemonDetailViewModel = hiltViewModel()
-            PokemonDetailScreen(name = name, viewModel = viewModel)
+                composable(
+                    route = Screen.PokemonDetail.route,
+                    arguments = listOf(navArgument("name") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val name = backStackEntry.arguments?.getString("name") ?: ""
+                    val viewModel: PokemonDetailViewModel = hiltViewModel()
+                    PokemonDetailScreen(name = name, viewModel = viewModel)
+                }
+            }
         }
     }
 }
@@ -58,18 +97,16 @@ fun PokeAPIMainScreen(
     viewModel: PokemonViewModel,
     onPokemonClick: (String) -> Unit
 ) {
-    PokeApiTestTheme {
-        val names by viewModel.pokemonNames.collectAsState()
-        val isLoading by viewModel.isLoading.collectAsState()
+    val names by viewModel.pokemonNames.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                PokemonList(names, onPokemonClick)
-                LoadingOverlay(isLoading = isLoading)
-            }
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            PokemonList(names, onPokemonClick)
+            LoadingOverlay(isLoading = isLoading)
         }
     }
 }
