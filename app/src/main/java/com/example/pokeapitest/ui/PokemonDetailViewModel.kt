@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,10 +32,14 @@ class PokemonDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _pokemonDetail.value = getPokemonDetailUseCase(name.lowercase())
+                getPokemonDetailUseCase(name.lowercase()).collectLatest { detail ->
+                    _pokemonDetail.value = detail
+                    if (detail != null) {
+                        _isLoading.value = false
+                    }
+                }
             } catch (e: Exception) {
                 _errorChannel.emit("Failed to load Pokemon detail: ${e.message}")
-            } finally {
                 _isLoading.value = false
             }
         }

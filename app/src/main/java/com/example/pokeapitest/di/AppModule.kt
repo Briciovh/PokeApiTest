@@ -1,11 +1,16 @@
 package com.example.pokeapitest.di
 
+import android.content.Context
+import androidx.room.Room
+import com.example.pokeapitest.data.local.PokemonDao
+import com.example.pokeapitest.data.local.PokemonDatabase
 import com.example.pokeapitest.data.remote.PokeApi
 import com.example.pokeapitest.data.repository.PokemonRepository
 import com.example.pokeapitest.data.repository.PokemonRepositoryImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -27,7 +32,26 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun providePokemonRepository(api: PokeApi): PokemonRepository {
-        return PokemonRepositoryImpl(api)
+    fun providePokemonDatabase(@ApplicationContext context: Context): PokemonDatabase {
+        return Room.databaseBuilder(
+            context,
+            PokemonDatabase::class.java,
+            "pokemon_db"
+        ).build()
+    }
+
+    @Provides
+    @Singleton
+    fun providePokemonDao(db: PokemonDatabase): PokemonDao {
+        return db.dao
+    }
+
+    @Provides
+    @Singleton
+    fun providePokemonRepository(
+        api: PokeApi,
+        dao: PokemonDao
+    ): PokemonRepository {
+        return PokemonRepositoryImpl(api, dao)
     }
 }

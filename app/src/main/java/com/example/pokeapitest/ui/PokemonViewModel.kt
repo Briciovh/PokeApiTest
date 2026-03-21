@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,10 +35,12 @@ class PokemonViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _pokemonNames.value = getPokemonListUseCase()
+                getPokemonListUseCase().collectLatest { names ->
+                    _pokemonNames.value = names
+                    _isLoading.value = false
+                }
             } catch (e: Exception) {
                 _errorChannel.emit("Failed to load Pokemon list: ${e.message}")
-            } finally {
                 _isLoading.value = false
             }
         }
