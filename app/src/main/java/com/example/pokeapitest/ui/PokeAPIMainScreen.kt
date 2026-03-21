@@ -12,17 +12,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -31,6 +34,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.pokeapitest.R
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
+import kotlinx.coroutines.flow.collectLatest
 
 sealed class Screen(val route: String) {
     object PokemonList : Screen("pokemon_list")
@@ -44,8 +48,8 @@ sealed class Screen(val route: String) {
 fun PokeAPINavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
     val canNavigateBack = navController.previousBackStackEntry != null
+    val snackbarHostState = remember { SnackbarHostState() }
 
     PokeApiTestTheme {
         Scaffold(
@@ -63,7 +67,8 @@ fun PokeAPINavHost() {
                         }
                     }
                 )
-            }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { innerPadding ->
             NavHost(
                 navController = navController,
@@ -72,6 +77,13 @@ fun PokeAPINavHost() {
             ) {
                 composable(Screen.PokemonList.route) {
                     val viewModel: PokemonViewModel = hiltViewModel()
+                    
+                    LaunchedEffect(key1 = true) {
+                        viewModel.errorChannel.collectLatest { error ->
+                            snackbarHostState.showSnackbar(error)
+                        }
+                    }
+
                     PokeAPIMainScreen(
                         viewModel = viewModel,
                         onPokemonClick = { name ->
@@ -85,6 +97,13 @@ fun PokeAPINavHost() {
                 ) { backStackEntry ->
                     val name = backStackEntry.arguments?.getString("name") ?: ""
                     val viewModel: PokemonDetailViewModel = hiltViewModel()
+
+                    LaunchedEffect(key1 = true) {
+                        viewModel.errorChannel.collectLatest { error ->
+                            snackbarHostState.showSnackbar(error)
+                        }
+                    }
+
                     PokemonDetailScreen(name = name, viewModel = viewModel)
                 }
             }

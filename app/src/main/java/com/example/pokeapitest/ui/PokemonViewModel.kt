@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pokeapitest.domain.use_case.GetPokemonListUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,6 +23,9 @@ class PokemonViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private val _errorChannel = MutableSharedFlow<String>()
+    val errorChannel: SharedFlow<String> = _errorChannel.asSharedFlow()
+
     init {
         loadPokemon()
     }
@@ -30,7 +36,7 @@ class PokemonViewModel @Inject constructor(
             try {
                 _pokemonNames.value = getPokemonListUseCase()
             } catch (e: Exception) {
-                // Handle error
+                _errorChannel.emit("Failed to load Pokemon list: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
