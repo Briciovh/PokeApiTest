@@ -19,6 +19,7 @@ materialIcons = "1.7.8"
 mockk = "1.14.9"
 coroutinesTest = "1.10.2"
 truth = "1.4.5"
+turbine = "1.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 truth = { group = "com.google.truth", name = "truth", version.ref = "truth" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

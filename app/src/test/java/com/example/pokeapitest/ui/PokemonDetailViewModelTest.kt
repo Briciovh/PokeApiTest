@@ -8,6 +8,7 @@ import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -28,7 +29,7 @@ class PokemonDetailViewModelTest {
     }
 
     @Test
-    fun `loadPokemonDetail updates pokemonDetail and isLoading`() = runTest {
+    fun `loadPokemonDetail updates pokemonDetail and isLoading on success`() = runTest {
         val pokemonName = "bulbasaur"
         val expectedDetail = PokemonDto(
             id = 1,
@@ -43,6 +44,19 @@ class PokemonDetailViewModelTest {
         viewModel.loadPokemonDetail(pokemonName)
 
         assertThat(viewModel.pokemonDetail.value).isEqualTo(expectedDetail)
+        assertThat(viewModel.isLoading.value).isFalse()
+    }
+
+    @Test
+    fun `loadPokemonDetail emits error message on failure`() = runTest {
+        val pokemonName = "unknown"
+        val errorMessage = "Not found"
+        coEvery { getPokemonDetailUseCase(any()) } throws Exception(errorMessage)
+
+        viewModel.loadPokemonDetail(pokemonName)
+
+        val error = viewModel.errorChannel.first()
+        assertThat(error).contains(errorMessage)
         assertThat(viewModel.isLoading.value).isFalse()
     }
 }

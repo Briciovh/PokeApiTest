@@ -6,6 +6,7 @@ import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -27,13 +28,25 @@ class PokemonViewModelTest {
     }
 
     @Test
-    fun `loadPokemon updates pokemonNames and isLoading`() = runTest {
+    fun `loadPokemon updates pokemonNames and isLoading on success`() = runTest {
         val expectedNames = listOf("Pikachu", "Bulbasaur")
         coEvery { getPokemonListUseCase() } returns expectedNames
 
         viewModel = PokemonViewModel(getPokemonListUseCase)
 
         assertThat(viewModel.pokemonNames.value).isEqualTo(expectedNames)
+        assertThat(viewModel.isLoading.value).isFalse()
+    }
+
+    @Test
+    fun `loadPokemon emits error message on failure`() = runTest {
+        val errorMessage = "Network error"
+        coEvery { getPokemonListUseCase() } throws Exception(errorMessage)
+
+        viewModel = PokemonViewModel(getPokemonListUseCase)
+
+        val error = viewModel.errorChannel.first()
+        assertThat(error).contains(errorMessage)
         assertThat(viewModel.isLoading.value).isFalse()
     }
 }

@@ -8,6 +8,7 @@ import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 
@@ -32,6 +33,15 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
+    fun `getPokemonList throws exception when api fails`() = runTest {
+        coEvery { api.getPokemonList(any()) } throws Exception("Network error")
+
+        assertThrows(Exception::class.java) {
+            runTest { repository.getPokemonList(151) }
+        }
+    }
+
+    @Test
     fun `getPokemonDetail returns expected data`() = runTest {
         val expectedDto = PokemonDto(
             id = 1,
@@ -46,5 +56,14 @@ class PokemonRepositoryImplTest {
         val result = repository.getPokemonDetail("bulbasaur")
 
         assertThat(result).isEqualTo(expectedDto)
+    }
+
+    @Test
+    fun `getPokemonDetail throws exception when api fails`() = runTest {
+        coEvery { api.getPokemonDetail(any()) } throws Exception("Not found")
+
+        assertThrows(Exception::class.java) {
+            runTest { repository.getPokemonDetail("bulbasaur") }
+        }
     }
 }
