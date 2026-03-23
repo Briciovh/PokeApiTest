@@ -44,6 +44,7 @@ class PokemonRepositoryImpl @Inject constructor(
         val localPokemon = dao.getPokemonByName(name)
         if (localPokemon != null) {
             emit(localPokemon.toDto())
+            return@flow
         }
 
         // 2. Fetch from API if missing or to update
