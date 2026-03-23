@@ -1,5 +1,6 @@
 package com.example.pokeapitest.ui
 
+import app.cash.turbine.test
 import com.example.pokeapitest.MainDispatcherRule
 import com.example.pokeapitest.data.remote.dto.PokemonDto
 import com.example.pokeapitest.data.remote.dto.SpritesDto
@@ -9,6 +10,8 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -39,7 +42,7 @@ class PokemonDetailViewModelTest {
             sprites = SpritesDto(frontDefault = null),
             types = emptyList()
         )
-        coEvery { getPokemonDetailUseCase(pokemonName) } returns expectedDetail
+        coEvery { getPokemonDetailUseCase(pokemonName) } returns flowOf(expectedDetail)
 
         viewModel.loadPokemonDetail(pokemonName)
 
@@ -51,12 +54,14 @@ class PokemonDetailViewModelTest {
     fun `loadPokemonDetail emits error message on failure`() = runTest {
         val pokemonName = "unknown"
         val errorMessage = "Not found"
-        coEvery { getPokemonDetailUseCase(any()) } throws Exception(errorMessage)
+        coEvery { getPokemonDetailUseCase(any()) } returns flow { throw Exception(errorMessage) }
 
-        viewModel.loadPokemonDetail(pokemonName)
+        viewModel.errorChannel.test {
+            viewModel.loadPokemonDetail(pokemonName)
+            val error = awaitItem()
+            assertThat(error).contains(errorMessage)
+        }
 
-        val error = viewModel.errorChannel.first()
-        assertThat(error).contains(errorMessage)
         assertThat(viewModel.isLoading.value).isFalse()
     }
 }

@@ -25,7 +25,7 @@ class PokemonDetailViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _errorChannel = MutableSharedFlow<String>()
+    private val _errorChannel = MutableSharedFlow<String>(replay = 1)
     val errorChannel: SharedFlow<String> = _errorChannel.asSharedFlow()
 
     fun loadPokemonDetail(name: String) {
