@@ -77,7 +77,7 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
-    fun `getPokemonDetail emits local and then remote data`() = runTest {
+    fun `getPokemonDetail only emits local data if present`() = runTest {
         val name = "bulbasaur"
         val localEntity = PokemonEntity(
             id = 1,
@@ -88,17 +88,7 @@ class PokemonRepositoryImplTest {
             types = "grass,poison"
         )
         
-        val remoteDto = PokemonDto(
-            id = 1,
-            name = name,
-            height = 7,
-            weight = 69,
-            sprites = SpritesDto(frontDefault = "new_front_url"),
-            types = emptyList()
-        )
-
-        coEvery { dao.getPokemonByName(name) } returns localEntity andThen localEntity.copy(frontDefault = "new_front_url")
-        coEvery { api.getPokemonDetail(name) } returns remoteDto
+        coEvery { dao.getPokemonByName(name) } returns localEntity
 
         repository.getPokemonDetail(name).test {
             // First emission from DB
@@ -106,14 +96,10 @@ class PokemonRepositoryImplTest {
             assertThat(firstEmission?.name).isEqualTo(name)
             assertThat(firstEmission?.sprites?.frontDefault).isEqualTo("front_url")
 
-            // Second emission after API update
-            val secondEmission = awaitItem()
-            assertThat(secondEmission?.sprites?.frontDefault).isEqualTo("new_front_url")
-            
             awaitComplete()
         }
 
-        coVerify(exactly = 1) { dao.insertPokemon(any()) }
+        coVerify(exactly = 0) { api.getPokemonDetail(any()) }
     }
 
     @Test
