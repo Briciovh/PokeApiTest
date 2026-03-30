@@ -29,7 +29,7 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
-    fun `getPokemonList emits local data first then remote if local is empty`() = runTest {
+    fun getPokemonList_emitsLocalDataFirst_thenRemoteIfLocalIsEmpty() = runTest {
         // Mock local DB empty initially
         coEvery { dao.getPokemonList() } returns emptyList() andThen listOf(
             PokemonListItemEntity(name = "bulbasaur", url = "url1")
@@ -59,7 +59,7 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
-    fun `getPokemonList only emits local data if not empty`() = runTest {
+    fun getPokemonList_onlyEmitsLocalData_ifNotEmpty() = runTest {
         // Mock local DB not empty
         val localList = listOf(
             PokemonListItemEntity(name = "bulbasaur", url = "url1")
@@ -77,7 +77,7 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
-    fun `getPokemonDetail only emits local data if present`() = runTest {
+    fun getPokemonDetail_onlyEmitsLocalData_ifPresent() = runTest {
         val name = "bulbasaur"
         val localEntity = PokemonEntity(
             id = 1,
@@ -103,7 +103,7 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
-    fun `getPokemonDetail fetches from remote if local is missing`() = runTest {
+    fun getPokemonDetail_fetchesFromRemote_ifLocalIsMissing() = runTest {
         val name = "bulbasaur"
         
         val remoteDto = PokemonDto(

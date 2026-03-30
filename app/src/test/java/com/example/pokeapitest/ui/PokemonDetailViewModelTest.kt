@@ -32,7 +32,7 @@ class PokemonDetailViewModelTest {
     }
 
     @Test
-    fun `loadPokemonDetail updates pokemonDetail and isLoading on success`() = runTest {
+    fun loadPokemonDetail_updatesPokemonDetailAndIsLoading_onSuccess() = runTest {
         val pokemonName = "bulbasaur"
         val expectedDetail = PokemonDto(
             id = 1,
@@ -51,7 +51,7 @@ class PokemonDetailViewModelTest {
     }
 
     @Test
-    fun `loadPokemonDetail emits error message on failure`() = runTest {
+    fun loadPokemonDetail_emitsErrorMessage_onFailure() = runTest {
         val pokemonName = "unknown"
         val errorMessage = "Not found"
         coEvery { getPokemonDetailUseCase(any()) } returns flow { throw Exception(errorMessage) }
