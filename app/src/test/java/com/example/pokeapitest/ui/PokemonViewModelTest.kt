@@ -31,7 +31,7 @@ class PokemonViewModelTest {
     }
 
     @Test
-    fun `loadPokemon updates pokemonNames and isLoading on success`() = runTest {
+    fun loadPokemon_updatesPokemonNamesAndIsLoading_onSuccess() = runTest {
         val expectedNames = listOf("Pikachu", "Bulbasaur")
         coEvery { getPokemonListUseCase() } returns flowOf(expectedNames)
 
@@ -42,7 +42,7 @@ class PokemonViewModelTest {
     }
 
     @Test
-    fun `loadPokemon emits error message on failure`() = runTest {
+    fun loadPokemon_emitsErrorMessage_onFailure() = runTest {
         val errorMessage = "Network error"
         coEvery { getPokemonListUseCase() } returns flow { throw Exception(errorMessage) }
 

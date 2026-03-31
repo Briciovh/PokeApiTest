@@ -6,7 +6,7 @@ import org.junit.Test
 class UtilsTest {
 
     @Test
-    fun `capitalizeWords transforms all words to title case`() {
+    fun capitalizeWords_transformsAllWordsToTitleCase() {
         val input = "pikachu bulbasaur charmander"
         val expected = "Pikachu Bulbasaur Charmander"
         
@@ -14,7 +14,7 @@ class UtilsTest {
     }
 
     @Test
-    fun `capitalizeWords handles already uppercase strings`() {
+    fun capitalizeWords_handlesAlreadyUppercaseStrings() {
         val input = "PIKACHU"
         val expected = "Pikachu"
         
@@ -22,7 +22,7 @@ class UtilsTest {
     }
 
     @Test
-    fun `capitalizeWords handles mixed case strings`() {
+    fun capitalizeWords_handlesMixedCaseStrings() {
         val input = "pIkAcHu"
         val expected = "Pikachu"
         
@@ -30,7 +30,7 @@ class UtilsTest {
     }
 
     @Test
-    fun `capitalizeWords handles empty string`() {
+    fun capitalizeWords_handlesEmptyString() {
         val input = ""
         val expected = ""
         
