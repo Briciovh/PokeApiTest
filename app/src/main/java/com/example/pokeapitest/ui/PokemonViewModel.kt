@@ -2,6 +2,7 @@ package com.example.pokeapitest.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.use_case.GetPokemonListUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -18,8 +19,8 @@ class PokemonViewModel @Inject constructor(
     private val getPokemonListUseCase: GetPokemonListUseCase
 ) : ViewModel() {
 
-    private val _pokemonNames = MutableStateFlow<List<String>>(emptyList())
-    val pokemonNames: StateFlow<List<String>> = _pokemonNames
+    private val _pokemonList = MutableStateFlow<List<PokemonListItem>>(emptyList())
+    val pokemonList: StateFlow<List<PokemonListItem>> = _pokemonList
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -35,8 +36,8 @@ class PokemonViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                getPokemonListUseCase().collectLatest { names ->
-                    _pokemonNames.value = names
+                getPokemonListUseCase().collectLatest { items ->
+                    _pokemonList.value = items
                     _isLoading.value = false
                 }
             } catch (e: Exception) {

@@ -33,6 +33,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.pokeapitest.R
+import com.example.pokeapitest.domain.model.PokemonListItem
+import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
 import kotlinx.coroutines.flow.collectLatest
 
@@ -116,7 +118,7 @@ fun PokeAPIMainScreen(
     viewModel: PokemonViewModel,
     onPokemonClick: (String) -> Unit
 ) {
-    val names by viewModel.pokemonNames.collectAsState()
+    val pokemonList by viewModel.pokemonList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     Surface(
@@ -124,7 +126,7 @@ fun PokeAPIMainScreen(
         color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            PokemonList(names, onPokemonClick)
+            PokemonList(pokemonList, onPokemonClick)
             LoadingOverlay(isLoading = isLoading)
         }
     }
@@ -132,7 +134,7 @@ fun PokeAPIMainScreen(
 
 @Composable
 fun PokemonList(
-    names: List<String>,
+    pokemonList: List<PokemonListItem>,
     onPokemonClick: (String) -> Unit
 ) {
     LazyColumn(
@@ -143,8 +145,8 @@ fun PokemonList(
                 horizontal = dimensionResource(id = R.dimen.pokemon_list_horizontal_padding)
             )
     ) {
-        items(names) { name ->
-            PokemonItem(name = name, onItemClick = onPokemonClick)
+        items(pokemonList) { item ->
+            PokemonItem(item = item, onItemClick = onPokemonClick)
         }
     }
 }
@@ -154,7 +156,10 @@ fun PokemonList(
 fun PokemonListPreview() {
     PokeApiTestTheme {
         PokemonList(
-            names = listOf("Bulbasaur", "Ivysaur", "Venusaur", "Charmander"),
+            pokemonList = listOf(
+                PokemonListItem(id = 1, name = "bulbasaur", primaryType = PokemonType.GRASS),
+                PokemonListItem(id = 4, name = "charmander", primaryType = PokemonType.FIRE)
+            ),
             onPokemonClick = {}
         )
     }
