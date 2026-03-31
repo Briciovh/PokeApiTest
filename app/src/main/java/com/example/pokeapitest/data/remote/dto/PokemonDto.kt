@@ -1,5 +1,6 @@
 package com.example.pokeapitest.data.remote.dto
 
+import com.example.pokeapitest.domain.model.PokemonType
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
@@ -11,7 +12,10 @@ data class PokemonDto(
     @Json(name = "weight") val weight: Int,
     @Json(name = "sprites") val sprites: SpritesDto,
     @Json(name = "types") val types: List<TypeSlotDto>
-)
+) {
+    val pokemonTypes: List<PokemonType>
+        get() = types.map { PokemonType.fromString(it.type.name) }
+}
 
 @JsonClass(generateAdapter = true)
 data class SpritesDto(

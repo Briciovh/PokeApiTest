@@ -1,5 +1,6 @@
 package com.example.pokeapitest.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +37,14 @@ fun PokemonDetailScreen(
         viewModel.loadPokemonDetail(name)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val backgroundColor = pokemonDetail?.pokemonTypes?.firstOrNull()?.color?.copy(alpha = 0.5f) 
+        ?: MaterialTheme.colorScheme.background
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundColor)
+    ) {
         pokemonDetail?.let { pokemon ->
             PokemonDetailContent(pokemon)
         }
@@ -75,7 +83,7 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = pokemon.types.joinToString(", ") { it.capitalizeWords() },
+            text = pokemon.types.joinToString(", ") { it.typeName.capitalizeWords() },
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -116,7 +124,7 @@ fun PokemonDetailContentPreview() {
                 height = 4,
                 weight = 60,
                 imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
-                types = listOf("electric"),
+                types = listOf(com.example.pokeapitest.domain.model.PokemonType.ELECTRIC),
                 varieties = listOf(
                     PokemonVariety("pikachu", "https://pokeapi.co/api/v2/pokemon/25/", true),
                     PokemonVariety("pikachu-rock-star", "https://pokeapi.co/api/v2/pokemon/10080/", false)

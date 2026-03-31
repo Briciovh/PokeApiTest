@@ -3,6 +3,7 @@ package com.example.pokeapitest.data.repository
 import app.cash.turbine.test
 import com.example.pokeapitest.data.local.PokemonDao
 import com.example.pokeapitest.data.local.entity.PokemonEntity
+import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
 import com.example.pokeapitest.data.remote.PokeApi
 import com.example.pokeapitest.data.remote.dto.PokemonDto
@@ -43,6 +44,17 @@ class PokemonRepositoryImplTest {
             results = listOf(PokemonListItemDto(name = "bulbasaur", url = "url1"))
         )
         coEvery { api.getPokemonList(any()) } returns remoteList
+
+        // Mock detail fetch for concurrently fetching details in main branch logic
+        val remoteDto = PokemonDto(
+            id = 1,
+            name = "bulbasaur",
+            height = 7,
+            weight = 69,
+            sprites = SpritesDto(frontDefault = "front_url"),
+            types = emptyList()
+        )
+        coEvery { api.getPokemonDetail("bulbasaur") } returns remoteDto
 
         repository.getPokemonList(151).test {
             // First emission: empty local list
@@ -88,7 +100,7 @@ class PokemonRepositoryImplTest {
             height = 7,
             weight = 69,
             frontDefault = "front_url",
-            types = "grass,poison",
+            types = listOf(PokemonType.GRASS, PokemonType.POISON),
             varieties = "bulbasaur|url1|true"
         )
         

@@ -6,9 +6,12 @@ data class PokemonDetail(
     val height: Int,
     val weight: Int,
     val imageUrl: String?,
-    val types: List<String>,
+    val types: List<PokemonType>,
     val varieties: List<PokemonVariety>
-)
+) {
+    val pokemonTypes: List<PokemonType>
+        get() = types
+}
 
 data class PokemonVariety(
     val name: String,
