@@ -65,7 +65,7 @@ fun PokemonDto.toEntity() = PokemonEntity(
     height = height,
     weight = weight,
     frontDefault = sprites.frontDefault,
-    types = types.joinToString(",") { it.type.name }
+    types = pokemonTypes
 )
 
 fun PokemonEntity.toDto() = PokemonDto(
@@ -74,8 +74,11 @@ fun PokemonEntity.toDto() = PokemonDto(
     height = height,
     weight = weight,
     sprites = SpritesDto(frontDefault = frontDefault),
-    types = types.split(",").mapIndexed { index, type ->
-        TypeSlotDto(slot = index + 1, type = TypeDto(name = type, url = ""))
+    types = types.mapIndexed { index, pokemonType ->
+        TypeSlotDto(
+            slot = index + 1,
+            type = TypeDto(name = pokemonType.typeName, url = "")
+        )
     }
 )
 

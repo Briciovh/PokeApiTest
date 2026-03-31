@@ -3,6 +3,7 @@ package com.example.pokeapitest.data.repository
 import app.cash.turbine.test
 import com.example.pokeapitest.data.local.PokemonDao
 import com.example.pokeapitest.data.local.entity.PokemonEntity
+import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
 import com.example.pokeapitest.data.remote.PokeApi
 import com.example.pokeapitest.data.remote.dto.PokemonDto
@@ -85,7 +86,7 @@ class PokemonRepositoryImplTest {
             height = 7,
             weight = 69,
             frontDefault = "front_url",
-            types = "grass,poison"
+            types = listOf(PokemonType.GRASS, PokemonType.POISON)
         )
         
         coEvery { dao.getPokemonByName(name) } returns localEntity
