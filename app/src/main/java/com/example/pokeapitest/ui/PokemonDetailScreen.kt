@@ -19,10 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.pokeapitest.data.remote.dto.PokemonDto
-import com.example.pokeapitest.data.remote.dto.SpritesDto
-import com.example.pokeapitest.data.remote.dto.TypeDto
-import com.example.pokeapitest.data.remote.dto.TypeSlotDto
+import com.example.pokeapitest.domain.model.PokemonDetail
+import com.example.pokeapitest.domain.model.PokemonVariety
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
 import com.example.pokeapitest.util.capitalizeWords
 
@@ -47,7 +45,7 @@ fun PokemonDetailScreen(
 }
 
 @Composable
-fun PokemonDetailContent(pokemon: PokemonDto) {
+fun PokemonDetailContent(pokemon: PokemonDetail) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -55,7 +53,7 @@ fun PokemonDetailContent(pokemon: PokemonDto) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         AsyncImage(
-            model = pokemon.sprites.frontDefault,
+            model = pokemon.imageUrl,
             contentDescription = pokemon.name,
             modifier = Modifier.size(200.dp)
         )
@@ -77,7 +75,7 @@ fun PokemonDetailContent(pokemon: PokemonDto) {
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = pokemon.types.joinToString(", ") { it.type.name.capitalizeWords() },
+            text = pokemon.types.joinToString(", ") { it.capitalizeWords() },
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -89,6 +87,21 @@ fun PokemonDetailContent(pokemon: PokemonDto) {
             text = "Weight: ${pokemon.weight / 10.0} kg",
             style = MaterialTheme.typography.bodyLarge
         )
+        
+        if (pokemon.varieties.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Varieties:",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            pokemon.varieties.forEach { variety ->
+                Text(
+                    text = variety.name.replace("-", " ").capitalizeWords(),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
     }
 }
 
@@ -97,19 +110,16 @@ fun PokemonDetailContent(pokemon: PokemonDto) {
 fun PokemonDetailContentPreview() {
     PokeApiTestTheme {
         PokemonDetailContent(
-            pokemon = PokemonDto(
+            pokemon = PokemonDetail(
                 id = 25,
                 name = "pikachu",
                 height = 4,
                 weight = 60,
-                sprites = SpritesDto(
-                    frontDefault = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png"
-                ),
-                types = listOf(
-                    TypeSlotDto(
-                        slot = 1,
-                        type = TypeDto(name = "electric", url = "")
-                    )
+                imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
+                types = listOf("electric"),
+                varieties = listOf(
+                    PokemonVariety("pikachu", "https://pokeapi.co/api/v2/pokemon/25/", true),
+                    PokemonVariety("pikachu-rock-star", "https://pokeapi.co/api/v2/pokemon/10080/", false)
                 )
             )
         )

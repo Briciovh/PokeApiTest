@@ -10,5 +10,6 @@ data class PokemonEntity(
     val height: Int,
     val weight: Int,
     val frontDefault: String?,
-    val types: String // Will store as a comma-separated string or JSON for simplicity
+    val types: String, // Will store as a comma-separated string
+    val varieties: String // Will store as a JSON string for simplicity or comma-separated names|url|isDefault
 )

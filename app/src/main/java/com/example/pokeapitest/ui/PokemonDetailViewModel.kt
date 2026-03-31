@@ -2,7 +2,7 @@ package com.example.pokeapitest.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pokeapitest.data.remote.dto.PokemonDto
+import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.use_case.GetPokemonDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,8 +19,8 @@ class PokemonDetailViewModel @Inject constructor(
     private val getPokemonDetailUseCase: GetPokemonDetailUseCase
 ) : ViewModel() {
 
-    private val _pokemonDetail = MutableStateFlow<PokemonDto?>(null)
-    val pokemonDetail: StateFlow<PokemonDto?> = _pokemonDetail
+    private val _pokemonDetail = MutableStateFlow<PokemonDetail?>(null)
+    val pokemonDetail: StateFlow<PokemonDetail?> = _pokemonDetail
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading

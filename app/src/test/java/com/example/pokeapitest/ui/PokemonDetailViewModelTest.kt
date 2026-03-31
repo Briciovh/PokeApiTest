@@ -2,14 +2,12 @@ package com.example.pokeapitest.ui
 
 import app.cash.turbine.test
 import com.example.pokeapitest.MainDispatcherRule
-import com.example.pokeapitest.data.remote.dto.PokemonDto
-import com.example.pokeapitest.data.remote.dto.SpritesDto
+import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.use_case.GetPokemonDetailUseCase
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -34,13 +32,14 @@ class PokemonDetailViewModelTest {
     @Test
     fun loadPokemonDetail_updatesPokemonDetailAndIsLoading_onSuccess() = runTest {
         val pokemonName = "bulbasaur"
-        val expectedDetail = PokemonDto(
+        val expectedDetail = PokemonDetail(
             id = 1,
             name = pokemonName,
             height = 7,
             weight = 69,
-            sprites = SpritesDto(frontDefault = null),
-            types = emptyList()
+            imageUrl = null,
+            types = emptyList(),
+            varieties = emptyList()
         )
         coEvery { getPokemonDetailUseCase(pokemonName) } returns flowOf(expectedDetail)
 

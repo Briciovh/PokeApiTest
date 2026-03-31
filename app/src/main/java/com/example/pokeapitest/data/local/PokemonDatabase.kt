@@ -7,7 +7,7 @@ import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
 
 @Database(
     entities = [PokemonListItemEntity::class, PokemonEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class PokemonDatabase : RoomDatabase() {

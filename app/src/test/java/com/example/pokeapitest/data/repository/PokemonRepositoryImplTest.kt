@@ -8,6 +8,9 @@ import com.example.pokeapitest.data.remote.PokeApi
 import com.example.pokeapitest.data.remote.dto.PokemonDto
 import com.example.pokeapitest.data.remote.dto.PokemonListDto
 import com.example.pokeapitest.data.remote.dto.PokemonListItemDto
+import com.example.pokeapitest.data.remote.dto.PokemonResourceDto
+import com.example.pokeapitest.data.remote.dto.PokemonSpeciesDto
+import com.example.pokeapitest.data.remote.dto.PokemonVarietyDto
 import com.example.pokeapitest.data.remote.dto.SpritesDto
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
@@ -85,7 +88,8 @@ class PokemonRepositoryImplTest {
             height = 7,
             weight = 69,
             frontDefault = "front_url",
-            types = "grass,poison"
+            types = "grass,poison",
+            varieties = "bulbasaur|url1|true"
         )
         
         coEvery { dao.getPokemonByName(name) } returns localEntity
@@ -94,7 +98,9 @@ class PokemonRepositoryImplTest {
             // First emission from DB
             val firstEmission = awaitItem()
             assertThat(firstEmission?.name).isEqualTo(name)
-            assertThat(firstEmission?.sprites?.frontDefault).isEqualTo("front_url")
+            assertThat(firstEmission?.imageUrl).isEqualTo("front_url")
+            assertThat(firstEmission?.varieties).hasSize(1)
+            assertThat(firstEmission?.varieties?.get(0)?.name).isEqualTo("bulbasaur")
 
             awaitComplete()
         }
@@ -114,12 +120,20 @@ class PokemonRepositoryImplTest {
             sprites = SpritesDto(frontDefault = "front_url"),
             types = emptyList()
         )
+        
+        val remoteSpeciesDto = PokemonSpeciesDto(
+            id = 1,
+            name = name,
+            varieties = listOf(
+                PokemonVarietyDto(isDefault = true, pokemon = PokemonResourceDto(name = name, url = "url1"))
+            )
+        )
 
-        coEvery { dao.getPokemonByName(name) } returns null andThen remoteDto.toEntity()
+        coEvery { dao.getPokemonByName(name) } returns null andThen remoteDto.toEntity(remoteSpeciesDto)
         coEvery { api.getPokemonDetail(name) } returns remoteDto
+        coEvery { api.getPokemonSpecies(name) } returns remoteSpeciesDto
 
         repository.getPokemonDetail(name).test {
-            // Should NOT emit null initially, then emit remote data
             val result = awaitItem()
             assertThat(result?.name).isEqualTo(name)
             awaitComplete()
