@@ -1,30 +1,43 @@
 package com.example.pokeapitest.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -79,7 +92,7 @@ fun PokeAPINavHost() {
             ) {
                 composable(Screen.PokemonList.route) {
                     val viewModel: PokemonViewModel = hiltViewModel()
-                    
+
                     LaunchedEffect(key1 = true) {
                         viewModel.errorChannel.collectLatest { error ->
                             snackbarHostState.showSnackbar(error)
@@ -120,46 +133,99 @@ fun PokeAPIMainScreen(
 ) {
     val pokemonList by viewModel.pokemonList.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    var query by remember { mutableStateOf("") }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            PokemonList(pokemonList, onPokemonClick)
-            LoadingOverlay(isLoading = isLoading)
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        PokemonGrid(
+            pokemonList = pokemonList,
+            query = query,
+            onQueryChange = { query = it },
+            onPokemonClick = onPokemonClick
+        )
+        LoadingOverlay(isLoading = isLoading)
     }
 }
 
 @Composable
-fun PokemonList(
+fun PokemonGrid(
     pokemonList: List<PokemonListItem>,
+    query: String,
+    onQueryChange: (String) -> Unit,
     onPokemonClick: (String) -> Unit
 ) {
-    LazyColumn(
+    val filtered = pokemonList.filter { it.name.contains(query, ignoreCase = true) }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(
-                vertical = dimensionResource(id = R.dimen.pokemon_list_vertical_padding),
-                horizontal = dimensionResource(id = R.dimen.pokemon_list_horizontal_padding)
-            )
+            .background(Color(0xFFF5F5F5))
     ) {
-        items(pokemonList) { item ->
-            PokemonItem(item = item, onItemClick = onPokemonClick)
+        // ── Red header ────────────────────────────────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFCC0000))
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Column {
+                Text(
+                    text = "Pokédex",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = Color.White
+                )
+                Text(
+                    text = "${filtered.size} Pokémon",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+            }
+        }
+
+        // ── Search bar ────────────────────────────────────────────────────────
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            placeholder = { Text("Search Pokémon…") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            shape = RoundedCornerShape(50),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color.White,
+                focusedContainerColor = Color.White
+            )
+        )
+
+        // ── Grid ──────────────────────────────────────────────────────────────
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(filtered) { pokemon ->
+                PokemonItem(item = pokemon, onItemClick = onPokemonClick)
+            }
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, widthDp = 380, heightDp = 720)
 @Composable
-fun PokemonListPreview() {
+fun PokemonGridPreview() {
     PokeApiTestTheme {
-        PokemonList(
+        PokemonGrid(
             pokemonList = listOf(
                 PokemonListItem(id = 1, name = "bulbasaur", primaryType = PokemonType.GRASS),
-                PokemonListItem(id = 4, name = "charmander", primaryType = PokemonType.FIRE)
+                PokemonListItem(id = 4, name = "charmander", primaryType = PokemonType.FIRE),
+                PokemonListItem(id = 7, name = "squirtle", primaryType = PokemonType.WATER),
+                PokemonListItem(id = 25, name = "pikachu", primaryType = PokemonType.ELECTRIC),
             ),
+            query = "",
+            onQueryChange = {},
             onPokemonClick = {}
         )
     }
