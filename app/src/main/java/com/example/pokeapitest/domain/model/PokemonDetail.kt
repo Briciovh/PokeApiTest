@@ -16,5 +16,6 @@ data class PokemonDetail(
 data class PokemonVariety(
     val name: String,
     val url: String,
-    val isDefault: Boolean
+    val isDefault: Boolean,
+    val imageUrl: String? = null
 )
