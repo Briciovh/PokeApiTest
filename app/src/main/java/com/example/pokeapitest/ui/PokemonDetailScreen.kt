@@ -232,17 +232,29 @@ private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
     ) {
         Column(
             modifier = Modifier
-                .width(100.dp)
+                .width(160.dp)
                 .padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AsyncImage(
-                model = variety.imageUrl,
-                contentDescription = variety.name,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = variety.imageUrl,
+                    contentDescription = "${variety.name} pixel art",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+                AsyncImage(
+                    model = variety.officialArtworkUrl,
+                    contentDescription = "${variety.name} official artwork",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = variety.name.replace("-", " ").capitalizeWords(),
@@ -279,13 +291,15 @@ fun PokemonDetailContentPreview() {
                         name = "charizard",
                         url = "",
                         isDefault = true,
-                        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png"
+                        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
+                        officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png"
                     ),
                     PokemonVariety(
                         name = "charizard-mega-x",
                         url = "",
                         isDefault = false,
-                        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10034.png"
+                        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10034.png",
+                        officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png"
                     )
                 )
             )

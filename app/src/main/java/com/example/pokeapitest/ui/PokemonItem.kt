@@ -29,6 +29,7 @@ import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
 import com.example.pokeapitest.util.capitalizeWords
+import com.example.pokeapitest.util.pokemonOfficialArtworkUrl
 
 @Composable
 fun PokemonItem(
@@ -36,8 +37,7 @@ fun PokemonItem(
     onItemClick: (String) -> Unit
 ) {
     val typeColor = item.primaryType.color
-    val spriteUrl =
-        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${item.id}.png"
+    val spriteUrl = pokemonOfficialArtworkUrl(item.id)
 
     Card(
         modifier = Modifier

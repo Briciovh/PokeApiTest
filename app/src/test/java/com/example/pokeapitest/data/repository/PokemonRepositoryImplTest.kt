@@ -101,9 +101,11 @@ class PokemonRepositoryImplTest {
             weight = 69,
             frontDefault = "front_url",
             types = listOf(PokemonType.GRASS, PokemonType.POISON),
-            varieties = "bulbasaur|url1|true"
+            varieties = "bulbasaur|https://pokeapi.co/api/v2/pokemon/1/|true" +
+                "|https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" +
+                "|https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
         )
-        
+
         coEvery { dao.getPokemonByName(name) } returns localEntity
 
         repository.getPokemonDetail(name).test {
@@ -111,8 +113,14 @@ class PokemonRepositoryImplTest {
             val firstEmission = awaitItem()
             assertThat(firstEmission?.name).isEqualTo(name)
             assertThat(firstEmission?.imageUrl).isEqualTo("front_url")
+            assertThat(firstEmission?.officialArtworkUrl)
+                .isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png")
             assertThat(firstEmission?.varieties).hasSize(1)
             assertThat(firstEmission?.varieties?.get(0)?.name).isEqualTo("bulbasaur")
+            assertThat(firstEmission?.varieties?.get(0)?.imageUrl)
+                .isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png")
+            assertThat(firstEmission?.varieties?.get(0)?.officialArtworkUrl)
+                .isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png")
 
             awaitComplete()
         }
@@ -137,7 +145,10 @@ class PokemonRepositoryImplTest {
             id = 1,
             name = name,
             varieties = listOf(
-                PokemonVarietyDto(isDefault = true, pokemon = PokemonResourceDto(name = name, url = "url1"))
+                PokemonVarietyDto(
+                    isDefault = true,
+                    pokemon = PokemonResourceDto(name = name, url = "https://pokeapi.co/api/v2/pokemon/1/")
+                )
             )
         )
 
@@ -148,6 +159,8 @@ class PokemonRepositoryImplTest {
         repository.getPokemonDetail(name).test {
             val result = awaitItem()
             assertThat(result?.name).isEqualTo(name)
+            assertThat(result?.officialArtworkUrl)
+                .isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png")
             awaitComplete()
         }
 
