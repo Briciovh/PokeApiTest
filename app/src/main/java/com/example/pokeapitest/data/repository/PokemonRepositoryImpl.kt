@@ -96,7 +96,11 @@ fun PokemonDto.toEntity(species: PokemonSpeciesDto) = PokemonEntity(
     weight = weight,
     frontDefault = sprites.frontDefault,
     types = pokemonTypes,
-    varieties = species.varieties.joinToString(";") { "${it.pokemon.name}|${it.pokemon.url}|${it.isDefault}" }
+    varieties = species.varieties.joinToString(";") { variety ->
+        val id = variety.pokemon.url.split("/").filter { it.isNotEmpty() }.lastOrNull()
+        val spriteUrl = id?.let { "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$it.png" } ?: ""
+        "${variety.pokemon.name}|${variety.pokemon.url}|${variety.isDefault}|$spriteUrl"
+    }
 )
 
 fun PokemonEntity.toDomain() = PokemonDetail(
@@ -111,7 +115,8 @@ fun PokemonEntity.toDomain() = PokemonDetail(
         PokemonVariety(
             name = parts[0],
             url = parts[1],
-            isDefault = parts[2].toBoolean()
+            isDefault = parts[2].toBoolean(),
+            imageUrl = parts.getOrNull(3)
         )
     }
 )

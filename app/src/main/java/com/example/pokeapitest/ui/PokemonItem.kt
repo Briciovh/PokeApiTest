@@ -1,21 +1,30 @@
 package com.example.pokeapitest.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
@@ -26,33 +35,80 @@ fun PokemonItem(
     item: PokemonListItem,
     onItemClick: (String) -> Unit
 ) {
+    val typeColor = item.primaryType.color
+    val spriteUrl =
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${item.id}.png"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .aspectRatio(0.82f)
             .clickable { onItemClick(item.name) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = item.primaryType.color.copy(alpha = 0.2f)
-        )
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = typeColor)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "#${item.id.toString().padStart(3, '0')}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Decorative circle watermark (bottom-right)
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .align(Alignment.BottomEnd)
+                    .background(
+                        color = Color.White.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(50)
+                    )
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = item.name.capitalizeWords(),
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // ID + type badge row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "#${item.id.toString().padStart(3, '0')}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = Color.White.copy(alpha = 0.28f)
+                    ) {
+                        Text(
+                            text = item.primaryType.typeName.capitalizeWords(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                // Sprite centered
+                AsyncImage(
+                    model = spriteUrl,
+                    contentDescription = item.name,
+                    modifier = Modifier
+                        .size(88.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+
+                // Name at bottom
+                Text(
+                    text = item.name.capitalizeWords(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
         }
     }
 }
@@ -62,7 +118,7 @@ fun PokemonItem(
 fun PokemonItemPreview() {
     PokeApiTestTheme {
         PokemonItem(
-            item = PokemonListItem(id = 1, name = "bulbasaur", primaryType = PokemonType.GRASS),
+            item = PokemonListItem(id = 6, name = "charizard", primaryType = PokemonType.FIRE),
             onItemClick = {}
         )
     }
