@@ -28,11 +28,12 @@ Data flows through mapper extension functions at each boundary: `DTO → Entity 
 
 Navigation uses a `sealed class Screen` with typed route builders; the nav graph lives in `PokeAPIMainScreen.kt`.
 
-## Key Rules (from GEMINI.md)
+## Key Rules
 
 - **Never downgrade dependencies.** Always use the most recent compatible version.
 - **Always follow MVVM + Clean Architecture + Repository pattern.**
 - **Post-change workflow:** Gradle sync (if needed) → full build → run unit tests.
+- **CLAUDE.md / GEMINI.md sync:** These two files must always have identical content. A `PostToolUse` hook in `.claude/settings.json` enforces this automatically — any edit to one file is immediately copied to the other.
 
 ## Tech Stack
 
@@ -55,3 +56,26 @@ Unit tests live in `app/src/test/`. Key patterns:
 - Turbine for Flow assertions
 - `MainDispatcherRule` (custom) to swap the main dispatcher in tests
 - Truth for fluent assertions
+
+## Naming Conventions
+
+| Layer | Pattern | Example |
+|---|---|---|
+| Remote DTO | `XxxDto` | `PokemonDto`, `TypeSlotDto` |
+| Room entity | `XxxEntity` | `PokemonEntity`, `PokemonListItemEntity` |
+| Domain model | no suffix | `PokemonDetail`, `PokemonListItem` |
+| Use case | `GetXxxUseCase` | `GetPokemonDetailUseCase` |
+| Repository | `XxxRepository` / `XxxRepositoryImpl` | — |
+| Mappers | `toEntity()` / `toDomain()` | extension functions on the source type |
+
+## Conventions and Non-Obvious Decisions
+
+**Error handling:** ViewModels expose `SharedFlow<String> errorChannel` (replay=1). Compose screens collect it via `LaunchedEffect` and show a Snackbar. Do not introduce sealed error state wrappers — keep this pattern.
+
+**Room migrations:** `fallbackToDestructiveMigration()` is intentional. To change the schema, just bump the version number in `PokemonDatabase.kt`. Do not add migration scripts unless deliberately changing this strategy.
+
+**Varieties storage:** `PokemonEntity.varieties` is a pipe/semicolon-delimited string blob (`"name|url|isDefault|spriteUrl;..."`), not a normalized relation. This is an intentional simplification.
+
+**Sprite URLs:** Images come from GitHub raw content, not PokeAPI:
+- Official artwork (list): `.../sprites/pokemon/other/official-artwork/{id}.png`
+- Variety sprites (detail): `.../sprites/pokemon/{id}.png`

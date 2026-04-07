@@ -26,6 +26,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -45,7 +45,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.pokeapitest.R
 import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
@@ -63,14 +62,14 @@ sealed class Screen(val route: String) {
 fun PokeAPINavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val canNavigateBack = navController.previousBackStackEntry != null
+    val canNavigateBack = navBackStackEntry != null && navController.previousBackStackEntry != null
     val snackbarHostState = remember { SnackbarHostState() }
 
     PokeApiTestTheme {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Pokedex") },
+                    title = { Text("Pokédex") },
                     navigationIcon = {
                         if (canNavigateBack) {
                             IconButton(onClick = { navController.navigateUp() }) {
@@ -80,7 +79,12 @@ fun PokeAPINavHost() {
                                 )
                             }
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color(0xFFCC0000),
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
+                    )
                 )
             },
             snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -160,27 +164,6 @@ fun PokemonGrid(
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        // ── Red header ────────────────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFCC0000))
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            Column {
-                Text(
-                    text = "Pokédex",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White
-                )
-                Text(
-                    text = "${filtered.size} Pokémon",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-            }
-        }
-
         // ── Search bar ────────────────────────────────────────────────────────
         OutlinedTextField(
             value = query,

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);const f=\\(j.tool_input||{}\\).file_path||'';const path=require\\('path'\\);const b=path.basename\\(f\\);const dir=path.dirname\\(f\\);if\\(b==='CLAUDE.md'\\)console.log\\('Would cp to: '+path.join\\(dir,'GEMINI.md'\\)\\);else if\\(b==='GEMINI.md'\\)console.log\\('Would cp to: '+path.join\\(dir,'CLAUDE.md'\\)\\);else console.log\\('no match: '+b\\);}\\)\")",
+      "Bash(node -e \"let d='';process.stdin.on\\('data',c=>d+=c\\);process.stdin.on\\('end',\\(\\)=>{const j=JSON.parse\\(d\\);const f=\\(j.tool_input||{}\\).file_path||'';const fs=require\\('fs'\\);const path=require\\('path'\\);const b=path.basename\\(f\\);const dir=path.dirname\\(f\\);if\\(b==='CLAUDE.md'\\){fs.copyFileSync\\(f,path.join\\(dir,'GEMINI.md'\\)\\);console.log\\('synced'\\);}else if\\(b==='GEMINI.md'\\){fs.copyFileSync\\(f,path.join\\(dir,'CLAUDE.md'\\)\\);console.log\\('synced'\\);}else{console.log\\('skip: '+b\\);}}\\);\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(node:*)"
+    ]
+  }
+}

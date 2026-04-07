@@ -1,10 +1,81 @@
-# Development Rules | Reglas de Desarrollo
+# CLAUDE.md
 
-- **Dependency Management | Gestión de Dependencias:** Never attempt to downgrade any version of the project's dependencies or libraries. Always seek the most recent version compatible with the current environment. / Nunca se debe intentar hacer downgrade de ninguna versión de las dependencias o librerías del proyecto. Siempre se debe buscar la versión más reciente que sea compatible con el entorno actual.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-- **Architecture | Arquitectura:** Android applications must follow MVVM, Clean Architecture, and use the Repository pattern for data retrieval. / Las aplicaciones Android deben tener una arquitectura MVVM, Clean Architecture y usar el patrón Repository para la obtención de datos.
+## Commands
 
-- **Post-Change Verification Workflow | Flujo de Verificación Post-Cambio:** After making any modification to the code or configuration, the following steps must be followed: / Tras realizar cualquier modificación en el código o configuración, se deben seguir estos pasos:
-    1. **Gradle Sync:** Run synchronization if the change requires it (modifications in `build.gradle.kts`, `libs.versions.toml`, etc.). / Ejecutar sincronización si el cambio lo requiere (modificaciones en `build.gradle.kts`, `libs.versions.toml`, etc.).
-    2. **Build:** Perform a full project build to ensure there are no errors. / Realizar una compilación completa del proyecto para asegurar que no hay errores.
-    3. **Unit Tests:** Run the full Unit Test suite (whenever tests are present in the project). / Ejecutar la suite de Unit Tests completa (siempre que haya tests presentes en el proyecto).
+```bash
+./gradlew build                  # Full project build
+./gradlew assembleDebug          # Build debug APK
+./gradlew installDebug           # Build and install debug APK
+./gradlew test                   # Run unit tests
+./gradlew connectedAndroidTest   # Run instrumented tests
+./gradlew test --tests "com.example.pokeapitest.FooTest"  # Run a single test class
+```
+
+After any change to `build.gradle.kts` or `libs.versions.toml`, a Gradle sync is required. After any code change, run a full build and unit tests.
+
+## Architecture
+
+Clean Architecture + MVVM with three layers:
+
+- **`data/`** — Repository implementations, Room database (`local/`), Retrofit API + DTOs (`remote/`). The repository reads from local DB first (offline-first), then fetches from API and caches if empty.
+- **`domain/`** — Use cases (`GetPokemonListUseCase`, `GetPokemonDetailUseCase`) and domain models. Pure Kotlin, no Android dependencies.
+- **`ui/`** — Compose screens and ViewModels. ViewModels expose `StateFlow` for state and `SharedFlow` for one-time events (errors).
+- **`di/`** — Single Hilt `AppModule` wiring Retrofit, OkHttp, Room, and repositories.
+
+Data flows through mapper extension functions at each boundary: `DTO → Entity → Domain model`.
+
+Navigation uses a `sealed class Screen` with typed route builders; the nav graph lives in `PokeAPIMainScreen.kt`.
+
+## Key Rules
+
+- **Never downgrade dependencies.** Always use the most recent compatible version.
+- **Always follow MVVM + Clean Architecture + Repository pattern.**
+- **Post-change workflow:** Gradle sync (if needed) → full build → run unit tests.
+- **CLAUDE.md / GEMINI.md sync:** These two files must always have identical content. A `PostToolUse` hook in `.claude/settings.json` enforces this automatically — any edit to one file is immediately copied to the other.
+
+## Tech Stack
+
+| Concern | Library |
+|---|---|
+| UI | Jetpack Compose + Material 3 |
+| DI | Hilt 2.59.2 |
+| Networking | Retrofit 3 + OkHttp + Moshi |
+| Local DB | Room 2.8.4 |
+| Images | Coil 2.7.0 |
+| Async | Kotlin Coroutines + Flow |
+| Testing | JUnit 4, MockK, Truth, Turbine |
+
+Versions are managed via `gradle/libs.versions.toml`.
+
+## Testing Approach
+
+Unit tests live in `app/src/test/`. Key patterns:
+- MockK for mocking
+- Turbine for Flow assertions
+- `MainDispatcherRule` (custom) to swap the main dispatcher in tests
+- Truth for fluent assertions
+
+## Naming Conventions
+
+| Layer | Pattern | Example |
+|---|---|---|
+| Remote DTO | `XxxDto` | `PokemonDto`, `TypeSlotDto` |
+| Room entity | `XxxEntity` | `PokemonEntity`, `PokemonListItemEntity` |
+| Domain model | no suffix | `PokemonDetail`, `PokemonListItem` |
+| Use case | `GetXxxUseCase` | `GetPokemonDetailUseCase` |
+| Repository | `XxxRepository` / `XxxRepositoryImpl` | — |
+| Mappers | `toEntity()` / `toDomain()` | extension functions on the source type |
+
+## Conventions and Non-Obvious Decisions
+
+**Error handling:** ViewModels expose `SharedFlow<String> errorChannel` (replay=1). Compose screens collect it via `LaunchedEffect` and show a Snackbar. Do not introduce sealed error state wrappers — keep this pattern.
+
+**Room migrations:** `fallbackToDestructiveMigration()` is intentional. To change the schema, just bump the version number in `PokemonDatabase.kt`. Do not add migration scripts unless deliberately changing this strategy.
+
+**Varieties storage:** `PokemonEntity.varieties` is a pipe/semicolon-delimited string blob (`"name|url|isDefault|spriteUrl;..."`), not a normalized relation. This is an intentional simplification.
+
+**Sprite URLs:** Images come from GitHub raw content, not PokeAPI:
+- Official artwork (list): `.../sprites/pokemon/other/official-artwork/{id}.png`
+- Variety sprites (detail): `.../sprites/pokemon/{id}.png`
