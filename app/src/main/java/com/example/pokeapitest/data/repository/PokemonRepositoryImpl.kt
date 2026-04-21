@@ -10,6 +10,8 @@ import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.domain.model.PokemonVariety
+import com.example.pokeapitest.util.pokemonOfficialArtworkUrl
+import com.example.pokeapitest.util.pokemonPixelArtUrl
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -97,9 +99,10 @@ fun PokemonDto.toEntity(species: PokemonSpeciesDto) = PokemonEntity(
     frontDefault = sprites.frontDefault,
     types = pokemonTypes,
     varieties = species.varieties.joinToString(";") { variety ->
-        val id = variety.pokemon.url.split("/").filter { it.isNotEmpty() }.lastOrNull()
-        val spriteUrl = id?.let { "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/$it.png" } ?: ""
-        "${variety.pokemon.name}|${variety.pokemon.url}|${variety.isDefault}|$spriteUrl"
+        val varId = variety.pokemon.url.split("/").filter { it.isNotEmpty() }.lastOrNull()?.toIntOrNull()
+        val pixelUrl = varId?.let { pokemonPixelArtUrl(it) } ?: ""
+        val artworkUrl = varId?.let { pokemonOfficialArtworkUrl(it) } ?: ""
+        "${variety.pokemon.name}|${variety.pokemon.url}|${variety.isDefault}|$pixelUrl|$artworkUrl"
     }
 )
 
@@ -109,6 +112,7 @@ fun PokemonEntity.toDomain() = PokemonDetail(
     height = height,
     weight = weight,
     imageUrl = frontDefault,
+    officialArtworkUrl = pokemonOfficialArtworkUrl(id),
     types = types,
     varieties = if (varieties.isEmpty()) emptyList() else varieties.split(";").map {
         val parts = it.split("|")
@@ -116,7 +120,8 @@ fun PokemonEntity.toDomain() = PokemonDetail(
             name = parts[0],
             url = parts[1],
             isDefault = parts[2].toBoolean(),
-            imageUrl = parts.getOrNull(3)
+            imageUrl = parts.getOrNull(3),
+            officialArtworkUrl = parts.getOrNull(4)
         )
     }
 )

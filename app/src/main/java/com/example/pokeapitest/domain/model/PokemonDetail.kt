@@ -6,6 +6,7 @@ data class PokemonDetail(
     val height: Int,
     val weight: Int,
     val imageUrl: String?,
+    val officialArtworkUrl: String? = null,
     val types: List<PokemonType>,
     val varieties: List<PokemonVariety>
 ) {
@@ -17,5 +18,6 @@ data class PokemonVariety(
     val name: String,
     val url: String,
     val isDefault: Boolean,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val officialArtworkUrl: String? = null
 )
