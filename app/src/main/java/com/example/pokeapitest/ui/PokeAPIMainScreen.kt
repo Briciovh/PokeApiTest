@@ -77,14 +77,23 @@ sealed class Screen(val route: String) {
 data class GenerationInfo(
     val id: Int,
     val name: String,
+    val altName: String? = null,
     val startId: Int,
     val endId: Int
-)
+) {
+    val displayName: String get() = if (altName != null) "$name/$altName" else name
+}
 
 val Generations = listOf(
-    GenerationInfo(1, "Gen 1", 1, 151),
-    GenerationInfo(2, "Gen 2", 152, 251),
-    GenerationInfo(3, "Gen 3", 252, 386)
+    GenerationInfo(1, "Kanto",          null,     1,   151),
+    GenerationInfo(2, "Johto",          null,   152,   251),
+    GenerationInfo(3, "Hoenn",          null,   252,   386),
+    GenerationInfo(4, "Sinnoh",         "Shin'ō", 387, 493),
+    GenerationInfo(5, "Unova",          "Isshu", 494,  649),
+    GenerationInfo(6, "Kalos",          null,   650,   721),
+    GenerationInfo(7, "Alola",          null,   722,   809),
+    GenerationInfo(8, "Galar",          null,   810,   905),
+    GenerationInfo(9, "Paldea",         null,   906,  1025)
 )
 
 
@@ -119,7 +128,7 @@ fun PokeAPINavHost() {
                     HorizontalDivider()
                     Generations.forEach { gen ->
                         NavigationDrawerItem(
-                            label = { Text(gen.name) },
+                            label = { Text(gen.displayName) },
                             selected = currentRoute?.startsWith("pokemon_list") == true && 
                                        navBackStackEntry?.arguments?.getInt("gen") == gen.id,
                             onClick = {
@@ -153,7 +162,7 @@ fun PokeAPINavHost() {
                                 when {
                                     currentRoute?.startsWith("pokemon_list") == true -> {
                                         val gen = navBackStackEntry?.arguments?.getInt("gen") ?: 1
-                                        Generations.find { it.id == gen }?.name ?: "Pokédex"
+                                        Generations.find { it.id == gen }?.displayName ?: "Pokédex"
                                     }
                                     currentRoute == Screen.Settings.route -> "Settings"
                                     currentRoute?.startsWith("pokemon_detail") == true -> "Details"

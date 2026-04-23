@@ -17,6 +17,12 @@ interface PokemonDao {
     @Query("SELECT * FROM pokemon_list")
     suspend fun getPokemonList(): List<PokemonListItemEntity>
 
+    @Query("SELECT * FROM pokemon_list WHERE id BETWEEN :startId AND :endId ORDER BY id")
+    suspend fun getPokemonInRange(startId: Int, endId: Int): List<PokemonListItemEntity>
+
+    @Query("SELECT COUNT(*) FROM pokemon_list WHERE id BETWEEN :startId AND :endId")
+    suspend fun countInRange(startId: Int, endId: Int): Int
+
     @Query("DELETE FROM pokemon_list")
     suspend fun clearPokemonList()
 

@@ -24,17 +24,21 @@ class PokemonRepositoryImpl @Inject constructor(
     private val dao: PokemonDao
 ) : PokemonRepository {
 
-    override fun getPokemonList(limit: Int): Flow<List<PokemonListItemEntity>> = flow {
-        // 1. Get from DB
-        val localList = dao.getPokemonList()
-        emit(localList)
+    override fun getPokemonList(startId: Int, endId: Int): Flow<List<PokemonListItemEntity>> = flow {
+        val expectedCount = endId - startId + 1
 
-        // 2. If empty fetch from API and concurrently fetch details
-        if (localList.isEmpty()) {
+        // 1. Emit whatever is already cached for this range
+        val cached = dao.getPokemonInRange(startId, endId)
+        emit(cached)
+
+        // 2. Fetch from API only if cache is incomplete for this generation
+        if (cached.size < expectedCount) {
             try {
-                val remoteBasicList = api.getPokemonList(limit).results
+                val remoteBasicList = api.getPokemonList(
+                    limit = expectedCount,
+                    offset = startId - 1
+                ).results
 
-                // Concurrently fetch details for each pokemon to get ID and Type
                 val detailedList = coroutineScope {
                     remoteBasicList.map { basicItem ->
                         async {
@@ -47,16 +51,14 @@ class PokemonRepositoryImpl @Inject constructor(
                                     primaryType = details.pokemonTypes.firstOrNull() ?: PokemonType.UNKNOWN
                                 )
                             } catch (e: Exception) {
-                                // Fallback for failed detail fetch
                                 PokemonListItemEntity(name = basicItem.name, url = basicItem.url)
                             }
                         }
                     }.awaitAll()
                 }
 
-                dao.clearPokemonList()
                 dao.insertPokemonList(detailedList)
-                emit(dao.getPokemonList())
+                emit(dao.getPokemonInRange(startId, endId))
             } catch (e: Exception) {
                 throw e
             }
@@ -133,6 +135,6 @@ fun PokemonListItemEntity.toDomain() = PokemonListItem(
 )
 
 interface PokemonRepository {
-    fun getPokemonList(limit: Int): Flow<List<PokemonListItemEntity>>
+    fun getPokemonList(startId: Int, endId: Int): Flow<List<PokemonListItemEntity>>
     fun getPokemonDetail(name: String): Flow<PokemonDetail?>
 }

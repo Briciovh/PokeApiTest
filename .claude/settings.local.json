@@ -6,7 +6,8 @@
       "Bash(echo \"exit: $?\")",
       "Bash(node:*)",
       "Read(//mnt/c/Users/brici/code/**)",
-      "Bash(./gradlew test:*)"
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew assembleDebug)"
     ]
   }
 }
