@@ -39,6 +39,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -80,13 +82,16 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
     val secondaryColor = pokemon.types.getOrNull(1)?.color ?: primaryColor.copy(alpha = 0.6f)
 
     var movesExpanded by remember { mutableStateOf(false) }
+    var selectedVariety by remember(pokemon.id) {
+        mutableStateOf(pokemon.varieties.find { it.isDefault } ?: pokemon.varieties.firstOrNull())
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // ── Type-gradient hero ────────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(320.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(primaryColor, secondaryColor)
@@ -104,27 +109,29 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
                     .padding(top = 12.dp, end = 16.dp)
             )
 
-            // Hero image
+            // Hero image based on selected variety
             val imagePreference = LocalImagePreference.current
             val heroImageUrl = if (imagePreference == ImagePreference.OFFICIAL) {
-                pokemon.officialArtworkUrl ?: pokemon.imageUrl
+                selectedVariety?.officialArtworkUrl ?: selectedVariety?.imageUrl
             } else {
-                pokemon.imageUrl
+                selectedVariety?.imageUrl
             }
 
             AsyncImage(
                 model = heroImageUrl,
                 contentDescription = pokemon.name,
+                contentScale = ContentScale.Fit,
+                filterQuality = if (heroImageUrl?.contains("official-artwork") == true) FilterQuality.Low else FilterQuality.None,
                 modifier = Modifier
                     .size(220.dp)
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.Center)
             )
         }
 
         // ── Rounded white bottom sheet ────────────────────────────────────────
         Surface(
             modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            shape = RoundedCornerShape(32.dp, 32.dp, 0.dp, 0.dp),
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 8.dp
         ) {
@@ -144,7 +151,7 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = pokemon.name.capitalizeWords(),
+                            text = (selectedVariety?.name ?: pokemon.name).replace("-", " ").capitalizeWords(),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -222,18 +229,23 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
                 }
 
                 // Varieties section
-                if (pokemon.varieties.isNotEmpty()) {
+                val otherVarieties = pokemon.varieties.filter { it.name != selectedVariety?.name }
+                if (otherVarieties.isNotEmpty()) {
                     item {
                         Text(
-                            text = "Varieties",
+                            text = "Other Varieties",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     item {
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            items(pokemon.varieties) { variety ->
-                                PokemonVarietyCard(variety = variety, accentColor = primaryColor)
+                            items(otherVarieties) { variety ->
+                                PokemonVarietyCard(
+                                    variety = variety,
+                                    accentColor = primaryColor,
+                                    onClick = { selectedVariety = variety }
+                                )
                             }
                         }
                     }
@@ -278,7 +290,11 @@ private fun PokemonStatCell(label: String, value: String) {
 }
 
 @Composable
-private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
+private fun PokemonVarietyCard(
+    variety: PokemonVariety,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
     val imagePreference = LocalImagePreference.current
     val varietyImageUrl = if (imagePreference == ImagePreference.OFFICIAL) {
         variety.officialArtworkUrl ?: variety.imageUrl
@@ -287,38 +303,48 @@ private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
     }
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .width(150.dp)
+            .height(200.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = accentColor.copy(alpha = 0.10f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onClick
     ) {
         Column(
             modifier = Modifier
-                .width(120.dp)
-                .padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             AsyncImage(
                 model = varietyImageUrl,
                 contentDescription = "${variety.name} artwork",
+                contentScale = ContentScale.Fit,
+                filterQuality = if (varietyImageUrl?.contains("official-artwork") == true) FilterQuality.Low else FilterQuality.None,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(12.dp))
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = variety.name.replace("-", " ").capitalizeWords(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
-            if (variety.isDefault) {
+            if (variety.isDefault || variety.isShiny) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Default",
+                    text = if (variety.isDefault) "Default" else "Shiny",
                     style = MaterialTheme.typography.labelSmall,
-                    color = accentColor,
-                    fontWeight = FontWeight.Bold
+                    color = if (variety.isDefault) accentColor else Color(0xFFFFA000),
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
         }
@@ -382,13 +408,22 @@ fun PokemonDetailContentPreview() {
                         officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png"
                     ),
                     PokemonVariety(
+                        name = "charizard-shiny",
+                        url = "",
+                        isDefault = false,
+                        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/6.png",
+                        officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/6.png",
+                        isShiny = true
+                    ),
+                    PokemonVariety(
                         name = "charizard-mega-x",
                         url = "",
                         isDefault = false,
                         imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10034.png",
                         officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/10034.png"
                     )
-                )
+                ),
+                moves = emptyList()
             )
         )
     }
