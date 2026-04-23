@@ -28,8 +28,20 @@ class PokemonViewModel @Inject constructor(
     private val _errorChannel = MutableSharedFlow<String>(replay = 1)
     val errorChannel: SharedFlow<String> = _errorChannel.asSharedFlow()
 
-    init {
-        loadPokemon()
+    fun loadPokemonByGeneration(startId: Int, endId: Int) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Fetch up to endId to ensure we have all required pokemon in DB
+                getPokemonListUseCase(limit = endId, startId = startId, endId = endId).collectLatest { items ->
+                    _pokemonList.value = items
+                    _isLoading.value = false
+                }
+            } catch (e: Exception) {
+                _errorChannel.emit("Failed to load Pokemon list: ${e.message}")
+                _isLoading.value = false
+            }
+        }
     }
 
     private fun loadPokemon() {

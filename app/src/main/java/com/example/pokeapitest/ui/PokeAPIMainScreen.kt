@@ -14,11 +14,19 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -27,12 +35,14 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,85 +55,189 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.pokeapitest.domain.model.AppPreferences
 import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonType
+import com.example.pokeapitest.ui.settings.SettingsScreen
+import com.example.pokeapitest.ui.settings.SettingsViewModel
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
-    object PokemonList : Screen("pokemon_list")
+    object PokemonList : Screen("pokemon_list?gen={gen}") {
+        fun createRoute(gen: Int) = "pokemon_list?gen=$gen"
+    }
+    object Settings : Screen("settings")
     object PokemonDetail : Screen("pokemon_detail/{name}") {
         fun createRoute(name: String) = "pokemon_detail/$name"
     }
 }
+
+data class GenerationInfo(
+    val id: Int,
+    val name: String,
+    val startId: Int,
+    val endId: Int
+)
+
+val Generations = listOf(
+    GenerationInfo(1, "Gen 1", 1, 151),
+    GenerationInfo(2, "Gen 2", 152, 251),
+    GenerationInfo(3, "Gen 3", 252, 386)
+)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokeAPINavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
     val canNavigateBack = navBackStackEntry != null && navController.previousBackStackEntry != null
     val snackbarHostState = remember { SnackbarHostState() }
 
-    PokeApiTestTheme {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Pokédex") },
-                    navigationIcon = {
-                        if (canNavigateBack) {
-                            IconButton(onClick = { navController.navigateUp() }) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back"
-                                )
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(0xFFCC0000),
-                        titleContentColor = Color.White,
-                        navigationIconContentColor = Color.White
+    val settingsViewModel: SettingsViewModel = hiltViewModel()
+    val preferences by settingsViewModel.preferences.collectAsState()
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    PokeApiTestTheme(
+        themePreference = preferences.theme,
+        imagePreference = preferences.imagePreference
+    ) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                ModalDrawerSheet {
+                    Text(
+                        text = "Pokédex",
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.headlineSmall
                     )
-                )
-            },
-            snackbarHost = { SnackbarHost(snackbarHostState) }
-        ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = Screen.PokemonList.route,
-                modifier = Modifier.padding(innerPadding)
-            ) {
-                composable(Screen.PokemonList.route) {
-                    val viewModel: PokemonViewModel = hiltViewModel()
-
-                    LaunchedEffect(key1 = true) {
-                        viewModel.errorChannel.collectLatest { error ->
-                            snackbarHostState.showSnackbar(error)
-                        }
+                    HorizontalDivider()
+                    Generations.forEach { gen ->
+                        NavigationDrawerItem(
+                            label = { Text(gen.name) },
+                            selected = currentRoute?.startsWith("pokemon_list") == true && 
+                                       navBackStackEntry?.arguments?.getInt("gen") == gen.id,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                navController.navigate(Screen.PokemonList.createRoute(gen.id)) {
+                                    popUpTo(Screen.PokemonList.route) { inclusive = true }
+                                }
+                            },
+                            icon = { Icon(Icons.Default.Menu, contentDescription = null) },
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        )
                     }
-
-                    PokeAPIMainScreen(
-                        viewModel = viewModel,
-                        onPokemonClick = { name ->
-                            navController.navigate(Screen.PokemonDetail.createRoute(name))
-                        }
+                    NavigationDrawerItem(
+                        label = { Text("Settings") },
+                        selected = currentRoute == Screen.Settings.route,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Screen.Settings.route)
+                        },
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
                 }
-                composable(
-                    route = Screen.PokemonDetail.route,
-                    arguments = listOf(navArgument("name") { type = NavType.StringType })
-                ) { backStackEntry ->
-                    val name = backStackEntry.arguments?.getString("name") ?: ""
-                    val viewModel: PokemonDetailViewModel = hiltViewModel()
+            }
+        ) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(
+                                when {
+                                    currentRoute?.startsWith("pokemon_list") == true -> {
+                                        val gen = navBackStackEntry?.arguments?.getInt("gen") ?: 1
+                                        Generations.find { it.id == gen }?.name ?: "Pokédex"
+                                    }
+                                    currentRoute == Screen.Settings.route -> "Settings"
+                                    currentRoute?.startsWith("pokemon_detail") == true -> "Details"
+                                    else -> "Pokédex"
+                                }
+                            )
+                        },
+                        navigationIcon = {
+                            if (canNavigateBack) {
+                                IconButton(onClick = { navController.navigateUp() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back"
+                                    )
+                                }
+                            } else {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Menu,
+                                        contentDescription = "Menu"
+                                    )
+                                }
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                },
+                snackbarHost = { SnackbarHost(snackbarHostState) }
+            ) { innerPadding ->
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.PokemonList.createRoute(1),
+                    modifier = Modifier.padding(innerPadding)
+                ) {
+                    composable(
+                        route = Screen.PokemonList.route,
+                        arguments = listOf(navArgument("gen") {
+                            type = NavType.IntType
+                            defaultValue = 1
+                        })
+                    ) { backStackEntry ->
+                        val gen = backStackEntry.arguments?.getInt("gen") ?: 1
+                        val genInfo = Generations.find { it.id == gen } ?: Generations[0]
+                        val viewModel: PokemonViewModel = hiltViewModel()
 
-                    LaunchedEffect(key1 = true) {
-                        viewModel.errorChannel.collectLatest { error ->
-                            snackbarHostState.showSnackbar(error)
+                        LaunchedEffect(key1 = gen) {
+                            viewModel.loadPokemonByGeneration(genInfo.startId, genInfo.endId)
                         }
-                    }
 
-                    PokemonDetailScreen(name = name, viewModel = viewModel)
+                        LaunchedEffect(key1 = true) {
+                            viewModel.errorChannel.collectLatest { error ->
+                                snackbarHostState.showSnackbar(error)
+                            }
+                        }
+
+                        PokeAPIMainScreen(
+                            viewModel = viewModel,
+                            onPokemonClick = { name ->
+                                navController.navigate(Screen.PokemonDetail.createRoute(name))
+                            }
+                        )
+                    }
+                    composable(Screen.Settings.route) {
+                        SettingsScreen(viewModel = settingsViewModel)
+                    }
+                    composable(
+                        route = Screen.PokemonDetail.route,
+                        arguments = listOf(navArgument("name") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val name = backStackEntry.arguments?.getString("name") ?: ""
+                        val viewModel: PokemonDetailViewModel = hiltViewModel()
+
+                        LaunchedEffect(key1 = true) {
+                            viewModel.errorChannel.collectLatest { error ->
+                                snackbarHostState.showSnackbar(error)
+                            }
+                        }
+
+                        PokemonDetailScreen(name = name, viewModel = viewModel)
+                    }
                 }
             }
         }
@@ -162,7 +276,7 @@ fun PokemonGrid(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // ── Search bar ────────────────────────────────────────────────────────
         OutlinedTextField(
@@ -176,8 +290,8 @@ fun PokemonGrid(
             shape = RoundedCornerShape(50),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface
             )
         )
 
