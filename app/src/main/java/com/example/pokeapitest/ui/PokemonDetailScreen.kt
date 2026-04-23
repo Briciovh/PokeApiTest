@@ -35,11 +35,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.pokeapitest.domain.model.ImagePreference
 import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.domain.model.PokemonVariety
+import com.example.pokeapitest.ui.theme.LocalImagePreference
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
 import com.example.pokeapitest.util.capitalizeWords
+
 
 @Composable
 fun PokemonDetailScreen(
@@ -89,9 +92,16 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
                     .padding(top = 12.dp, end = 16.dp)
             )
 
-            // Official artwork
+            // Hero image
+            val imagePreference = LocalImagePreference.current
+            val heroImageUrl = if (imagePreference == ImagePreference.OFFICIAL) {
+                pokemon.officialArtworkUrl ?: pokemon.imageUrl
+            } else {
+                pokemon.imageUrl
+            }
+
             AsyncImage(
-                model = pokemon.imageUrl,
+                model = heroImageUrl,
                 contentDescription = pokemon.name,
                 modifier = Modifier
                     .size(220.dp)
@@ -223,6 +233,13 @@ private fun PokemonStatCell(label: String, value: String) {
 
 @Composable
 private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
+    val imagePreference = LocalImagePreference.current
+    val varietyImageUrl = if (imagePreference == ImagePreference.OFFICIAL) {
+        variety.officialArtworkUrl ?: variety.imageUrl
+    } else {
+        variety.imageUrl
+    }
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -232,29 +249,17 @@ private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
     ) {
         Column(
             modifier = Modifier
-                .width(160.dp)
+                .width(120.dp)
                 .padding(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AsyncImage(
-                    model = variety.imageUrl,
-                    contentDescription = "${variety.name} pixel art",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-                AsyncImage(
-                    model = variety.officialArtworkUrl,
-                    contentDescription = "${variety.name} official artwork",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-            }
+            AsyncImage(
+                model = varietyImageUrl,
+                contentDescription = "${variety.name} artwork",
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = variety.name.replace("-", " ").capitalizeWords(),

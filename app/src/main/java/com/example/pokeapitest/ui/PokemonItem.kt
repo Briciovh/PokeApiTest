@@ -25,11 +25,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.pokeapitest.domain.model.ImagePreference
 import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonType
+import com.example.pokeapitest.ui.theme.LocalImagePreference
 import com.example.pokeapitest.ui.theme.PokeApiTestTheme
 import com.example.pokeapitest.util.capitalizeWords
 import com.example.pokeapitest.util.pokemonOfficialArtworkUrl
+import com.example.pokeapitest.util.pokemonPixelArtUrl
+
 
 @Composable
 fun PokemonItem(
@@ -37,7 +41,12 @@ fun PokemonItem(
     onItemClick: (String) -> Unit
 ) {
     val typeColor = item.primaryType.color
-    val spriteUrl = pokemonOfficialArtworkUrl(item.id)
+    val imagePreference = LocalImagePreference.current
+    val spriteUrl = if (imagePreference == ImagePreference.OFFICIAL) {
+        pokemonOfficialArtworkUrl(item.id)
+    } else {
+        pokemonPixelArtUrl(item.id)
+    }
 
     Card(
         modifier = Modifier
