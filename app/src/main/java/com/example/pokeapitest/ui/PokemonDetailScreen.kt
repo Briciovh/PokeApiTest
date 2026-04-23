@@ -1,9 +1,12 @@
 package com.example.pokeapitest.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,10 +26,14 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.pokeapitest.domain.model.ImagePreference
 import com.example.pokeapitest.domain.model.PokemonDetail
+import com.example.pokeapitest.domain.model.PokemonMove
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.domain.model.PokemonVariety
 import com.example.pokeapitest.ui.theme.LocalImagePreference
@@ -64,10 +73,13 @@ fun PokemonDetailScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PokemonDetailContent(pokemon: PokemonDetail) {
     val primaryColor = pokemon.types.firstOrNull()?.color ?: Color(0xFFCC0000)
     val secondaryColor = pokemon.types.getOrNull(1)?.color ?: primaryColor.copy(alpha = 0.6f)
+
+    var movesExpanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // ── Type-gradient hero ────────────────────────────────────────────────
@@ -175,6 +187,40 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
                     }
                 }
 
+                // Moves section
+                if (pokemon.moves.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Moves (Sorted by Power)",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    item {
+                        val displayedMoves = if (movesExpanded) pokemon.moves else pokemon.moves.take(10)
+                        Column {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                displayedMoves.forEach { move ->
+                                    PokemonMoveChip(move = move)
+                                }
+                            }
+
+                            if (pokemon.moves.size > 10) {
+                                TextButton(
+                                    onClick = { movesExpanded = !movesExpanded },
+                                    modifier = Modifier.align(Alignment.End)
+                                ) {
+                                    Text(if (movesExpanded) "Show Less" else "More... (${pokemon.moves.size - 10} more)")
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Varieties section
                 if (pokemon.varieties.isNotEmpty()) {
                     item {
@@ -273,6 +319,42 @@ private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
                     style = MaterialTheme.typography.labelSmall,
                     color = accentColor,
                     fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PokemonMoveChip(move: PokemonMove) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = move.type.color.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, move.type.color.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(move.type.color)
+            )
+            Text(
+                text = move.name.replace("-", " ").capitalizeWords(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (move.power > 0) {
+                Text(
+                    text = move.power.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
         }

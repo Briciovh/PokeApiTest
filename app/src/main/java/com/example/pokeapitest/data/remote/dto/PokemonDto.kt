@@ -11,11 +11,23 @@ data class PokemonDto(
     @Json(name = "height") val height: Int,
     @Json(name = "weight") val weight: Int,
     @Json(name = "sprites") val sprites: SpritesDto,
-    @Json(name = "types") val types: List<TypeSlotDto>
+    @Json(name = "types") val types: List<TypeSlotDto>,
+    @Json(name = "moves") val moves: List<MoveSlotDto>
 ) {
     val pokemonTypes: List<PokemonType>
         get() = types.map { PokemonType.fromString(it.type.name) }
 }
+
+@JsonClass(generateAdapter = true)
+data class MoveSlotDto(
+    @Json(name = "move") val move: MoveDto
+)
+
+@JsonClass(generateAdapter = true)
+data class MoveDto(
+    @Json(name = "name") val name: String,
+    @Json(name = "url") val url: String
+)
 
 @JsonClass(generateAdapter = true)
 data class SpritesDto(

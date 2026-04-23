@@ -8,7 +8,8 @@ data class PokemonDetail(
     val imageUrl: String?,
     val officialArtworkUrl: String? = null,
     val types: List<PokemonType>,
-    val varieties: List<PokemonVariety>
+    val varieties: List<PokemonVariety>,
+    val moves: List<PokemonMove> = emptyList()
 ) {
     val pokemonTypes: List<PokemonType>
         get() = types

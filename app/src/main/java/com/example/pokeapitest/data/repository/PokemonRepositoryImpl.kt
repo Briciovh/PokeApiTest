@@ -4,10 +4,12 @@ import com.example.pokeapitest.data.local.PokemonDao
 import com.example.pokeapitest.data.local.entity.PokemonEntity
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
 import com.example.pokeapitest.data.remote.PokeApi
+import com.example.pokeapitest.data.remote.dto.MoveDetailDto
 import com.example.pokeapitest.data.remote.dto.PokemonDto
 import com.example.pokeapitest.data.remote.dto.PokemonSpeciesDto
 import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.model.PokemonListItem
+import com.example.pokeapitest.domain.model.PokemonMove
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.domain.model.PokemonVariety
 import com.example.pokeapitest.util.pokemonOfficialArtworkUrl
@@ -68,12 +70,13 @@ class PokemonRepositoryImpl @Inject constructor(
     override fun getPokemonDetail(name: String): Flow<PokemonDetail?> = flow {
         // 1. Check local DB
         val localPokemon = dao.getPokemonByName(name)
-        if (localPokemon != null) {
+        // If we have local data and it has moves (our new requirement), emit it
+        if (localPokemon != null && localPokemon.moves.isNotEmpty()) {
             emit(localPokemon.toDomain())
             return@flow
         }
 
-        // 2. Fetch from API if missing
+        // 2. Fetch from API if missing or incomplete
         try {
             coroutineScope {
                 val pokemonDeferred = async { api.getPokemonDetail(name) }
@@ -82,18 +85,30 @@ class PokemonRepositoryImpl @Inject constructor(
                 val pokemonDto = pokemonDeferred.await()
                 val speciesDto = speciesDeferred.await()
 
-                val entity = pokemonDto.toEntity(speciesDto)
+                // Fetch details for all moves in parallel
+                val moveDetails = pokemonDto.moves.map { moveSlot ->
+                    async {
+                        try {
+                            api.getMoveDetail(moveSlot.move.name)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }.awaitAll().filterNotNull()
+
+                val entity = pokemonDto.toEntity(speciesDto, moveDetails)
                 dao.insertPokemon(entity)
                 emit(dao.getPokemonByName(name)?.toDomain())
             }
         } catch (e: Exception) {
             if (localPokemon == null) throw e
+            else emit(localPokemon.toDomain())
         }
     }
 }
 
 // Mapper extensions
-fun PokemonDto.toEntity(species: PokemonSpeciesDto) = PokemonEntity(
+fun PokemonDto.toEntity(species: PokemonSpeciesDto, moveDetails: List<MoveDetailDto>) = PokemonEntity(
     id = id,
     name = name,
     height = height,
@@ -105,7 +120,8 @@ fun PokemonDto.toEntity(species: PokemonSpeciesDto) = PokemonEntity(
         val pixelUrl = varId?.let { pokemonPixelArtUrl(it) } ?: ""
         val artworkUrl = varId?.let { pokemonOfficialArtworkUrl(it) } ?: ""
         "${variety.pokemon.name}|${variety.pokemon.url}|${variety.isDefault}|$pixelUrl|$artworkUrl"
-    }
+    },
+    moves = moveDetails.joinToString(";") { "${it.name}|${it.power ?: 0}|${it.type.name}" }
 )
 
 fun PokemonEntity.toDomain() = PokemonDetail(
@@ -125,7 +141,15 @@ fun PokemonEntity.toDomain() = PokemonDetail(
             imageUrl = parts.getOrNull(3),
             officialArtworkUrl = parts.getOrNull(4)
         )
-    }
+    },
+    moves = if (moves.isEmpty()) emptyList() else moves.split(";").map {
+        val parts = it.split("|")
+        PokemonMove(
+            name = parts[0],
+            power = parts[1].toInt(),
+            type = PokemonType.fromString(parts[2])
+        )
+    }.sortedWith(compareByDescending<PokemonMove> { it.power }.thenBy { it.name })
 )
 
 fun PokemonListItemEntity.toDomain() = PokemonListItem(

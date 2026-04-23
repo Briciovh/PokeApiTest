@@ -23,6 +23,11 @@ interface PokeApi {
         @Path("name") name: String
     ): com.example.pokeapitest.data.remote.dto.PokemonSpeciesDto
 
+    @GET("move/{name}")
+    suspend fun getMoveDetail(
+        @Path("name") name: String
+    ): com.example.pokeapitest.data.remote.dto.MoveDetailDto
+
     companion object {
         const val BASE_URL = "https://pokeapi.co/api/v2/"
     }
