@@ -86,7 +86,7 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
+                .height(320.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(primaryColor, secondaryColor)
@@ -117,7 +117,7 @@ fun PokemonDetailContent(pokemon: PokemonDetail) {
                 contentDescription = pokemon.name,
                 modifier = Modifier
                     .size(220.dp)
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.Center)
             )
         }
 
@@ -287,7 +287,10 @@ private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
     }
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier
+            .width(150.dp)
+            .height(200.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = accentColor.copy(alpha = 0.10f)
         ),
@@ -295,38 +298,34 @@ private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
     ) {
         Column(
             modifier = Modifier
-                .width(120.dp)
-                .padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             AsyncImage(
                 model = varietyImageUrl,
                 contentDescription = "${variety.name} artwork",
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(12.dp))
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = variety.name.replace("-", " ").capitalizeWords(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
-            if (variety.isDefault) {
+            if (variety.isDefault || variety.isShiny) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Default",
+                    text = if (variety.isDefault) "Default" else "Shiny",
                     style = MaterialTheme.typography.labelSmall,
-                    color = accentColor,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            if (variety.isShiny) {
-                Text(
-                    text = "Shiny",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFFFFA000), // Amber/Gold color
-                    fontWeight = FontWeight.Bold
+                    color = if (variety.isDefault) accentColor else Color(0xFFFFA000),
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
         }
