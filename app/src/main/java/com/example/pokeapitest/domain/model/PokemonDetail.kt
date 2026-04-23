@@ -20,5 +20,6 @@ data class PokemonVariety(
     val url: String,
     val isDefault: Boolean,
     val imageUrl: String? = null,
-    val officialArtworkUrl: String? = null
+    val officialArtworkUrl: String? = null,
+    val isShiny: Boolean = false
 )

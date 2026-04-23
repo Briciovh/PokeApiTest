@@ -12,7 +12,9 @@ import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonMove
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.domain.model.PokemonVariety
+import com.example.pokeapitest.util.pokemonOfficialArtworkShinyUrl
 import com.example.pokeapitest.util.pokemonOfficialArtworkUrl
+import com.example.pokeapitest.util.pokemonPixelArtShinyUrl
 import com.example.pokeapitest.util.pokemonPixelArtUrl
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -132,16 +134,33 @@ fun PokemonEntity.toDomain() = PokemonDetail(
     imageUrl = frontDefault,
     officialArtworkUrl = pokemonOfficialArtworkUrl(id),
     types = types,
-    varieties = if (varieties.isEmpty()) emptyList() else varieties.split(";").map {
-        val parts = it.split("|")
-        PokemonVariety(
-            name = parts[0],
-            url = parts[1],
-            isDefault = parts[2].toBoolean(),
-            imageUrl = parts.getOrNull(3),
-            officialArtworkUrl = parts.getOrNull(4)
-        )
-    },
+    varieties = varieties.split(";")
+        .filter { it.isNotEmpty() }
+        .map {
+            val parts = it.split("|")
+            PokemonVariety(
+                name = parts[0],
+                url = parts[1],
+                isDefault = parts[2].toBoolean(),
+                imageUrl = parts.getOrNull(3),
+                officialArtworkUrl = parts.getOrNull(4)
+            )
+        }.let { list ->
+            val shiny = PokemonVariety(
+                name = "$name-shiny",
+                url = "",
+                isDefault = false,
+                imageUrl = pokemonPixelArtShinyUrl(id),
+                officialArtworkUrl = pokemonOfficialArtworkShinyUrl(id),
+                isShiny = true
+            )
+            val defaultIndex = list.indexOfFirst { it.isDefault }
+            if (defaultIndex != -1) {
+                list.toMutableList().apply { add(defaultIndex + 1, shiny) }
+            } else {
+                list + shiny
+            }
+        },
     moves = if (moves.isEmpty()) emptyList() else moves.split(";").map {
         val parts = it.split("|")
         PokemonMove(

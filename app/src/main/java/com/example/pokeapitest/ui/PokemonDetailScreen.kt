@@ -321,6 +321,14 @@ private fun PokemonVarietyCard(variety: PokemonVariety, accentColor: Color) {
                     fontWeight = FontWeight.Bold
                 )
             }
+            if (variety.isShiny) {
+                Text(
+                    text = "Shiny",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFFFFA000), // Amber/Gold color
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
@@ -380,6 +388,14 @@ fun PokemonDetailContentPreview() {
                         isDefault = true,
                         imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
                         officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png"
+                    ),
+                    PokemonVariety(
+                        name = "charizard-shiny",
+                        url = "",
+                        isDefault = false,
+                        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/6.png",
+                        officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/6.png",
+                        isShiny = true
                     ),
                     PokemonVariety(
                         name = "charizard-mega-x",
