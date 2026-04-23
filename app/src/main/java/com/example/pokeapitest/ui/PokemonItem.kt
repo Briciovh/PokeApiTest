@@ -21,6 +21,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -105,8 +107,10 @@ fun PokemonItem(
                 AsyncImage(
                     model = spriteUrl,
                     contentDescription = item.name,
+                    contentScale = ContentScale.Fit,
+                    filterQuality = if (spriteUrl.contains("official-artwork")) FilterQuality.Low else FilterQuality.None,
                     modifier = Modifier
-                        .size(88.dp)
+                        .size(120.dp)
                         .align(Alignment.CenterHorizontally)
                 )
 
