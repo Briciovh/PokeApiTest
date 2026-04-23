@@ -8,7 +8,7 @@ import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
 
 @Database(
     entities = [PokemonListItemEntity::class, PokemonEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

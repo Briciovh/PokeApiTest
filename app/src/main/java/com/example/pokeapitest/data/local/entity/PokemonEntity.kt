@@ -12,5 +12,6 @@ data class PokemonEntity(
     val weight: Int,
     val frontDefault: String?,
     val types: List<PokemonType>,
-    val varieties: String // Will store as a JSON string for simplicity or comma-separated names|url|isDefault
+    val varieties: String, // Will store as a JSON string for simplicity or comma-separated names|url|isDefault
+    val moves: String // name|power|type;...
 )
