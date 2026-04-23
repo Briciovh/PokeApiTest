@@ -32,23 +32,7 @@ class PokemonViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Fetch up to endId to ensure we have all required pokemon in DB
-                getPokemonListUseCase(limit = endId, startId = startId, endId = endId).collectLatest { items ->
-                    _pokemonList.value = items
-                    _isLoading.value = false
-                }
-            } catch (e: Exception) {
-                _errorChannel.emit("Failed to load Pokemon list: ${e.message}")
-                _isLoading.value = false
-            }
-        }
-    }
-
-    private fun loadPokemon() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                getPokemonListUseCase().collectLatest { items ->
+                getPokemonListUseCase(startId, endId).collectLatest { items ->
                     _pokemonList.value = items
                     _isLoading.value = false
                 }

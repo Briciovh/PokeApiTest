@@ -26,7 +26,7 @@ Clean Architecture + MVVM with three layers:
 
 Data flows through mapper extension functions at each boundary: `DTO → Entity → Domain model`.
 
-Navigation uses a `sealed class Screen` with typed route builders; the nav graph lives in `PokeAPIMainScreen.kt`.
+Navigation uses a `sealed class Screen` with typed route builders; the nav graph lives in `PokeAPIMainScreen.kt`. Generation list and navigation are driven by `GenerationInfo(id, name, altName, startId, endId)` — defined alongside `Generations` (a 9-entry `val`) in the same file. `displayName` is a computed property that returns `"$name/$altName"` when `altName` is present, or just `name`. All UI (drawer items, top app bar title) uses `displayName`; never `name` directly.
 
 ## Key Rules
 
@@ -75,6 +75,10 @@ Unit tests live in `app/src/test/`. Key patterns:
 **Room migrations:** `fallbackToDestructiveMigration()` is intentional. To change the schema, just bump the version number in `PokemonDatabase.kt`. Do not add migration scripts unless deliberately changing this strategy.
 
 **Varieties storage:** `PokemonEntity.varieties` is a pipe/semicolon-delimited string blob (`"name|url|isDefault|spriteUrl;..."`), not a normalized relation. This is an intentional simplification.
+
+**Per-generation caching:** The repository fetches only the pokemon in the selected generation's range: `api.getPokemonList(limit = endId - startId + 1, offset = startId - 1)`. Cache completeness is checked via `dao.getPokemonInRange(startId, endId)` — if `cached.size < expectedCount`, a fetch is triggered. Generations accumulate in the DB (no `clearPokemonList()` between switches); `OnConflictStrategy.REPLACE` handles re-insertion safely.
+
+**Dual-name regions:** `GenerationInfo.altName` holds the Japanese romanization for Gen 4 (`Shin'ō`) and Gen 5 (`Isshu`). `displayName` is the single source of truth for displayed names — never read `.name` directly in UI code.
 
 **Sprite URLs:** Images come from GitHub raw content, not PokeAPI:
 - Official artwork (list): `.../sprites/pokemon/other/official-artwork/{id}.png`

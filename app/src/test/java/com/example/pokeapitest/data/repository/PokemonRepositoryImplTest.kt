@@ -33,62 +33,52 @@ class PokemonRepositoryImplTest {
     }
 
     @Test
-    fun getPokemonList_emitsLocalDataFirst_thenRemoteIfLocalIsEmpty() = runTest {
-        // Mock local DB empty initially
-        coEvery { dao.getPokemonList() } returns emptyList() andThen listOf(
-            PokemonListItemEntity(name = "bulbasaur", url = "url1")
-        )
-        
-        // Mock remote API call
-        val remoteList = PokemonListDto(
+    fun getPokemonList_emitsLocalDataFirst_thenFetchesRemoteIfCacheIncomplete() = runTest {
+        val startId = 1
+        val endId = 151
+        val fetched = listOf(PokemonListItemEntity(name = "bulbasaur", url = "url1", id = 1))
+
+        // Cache empty on first call, populated after insert
+        coEvery { dao.getPokemonInRange(startId, endId) } returns emptyList() andThen fetched
+
+        coEvery { api.getPokemonList(limit = 151, offset = 0) } returns PokemonListDto(
             results = listOf(PokemonListItemDto(name = "bulbasaur", url = "url1"))
         )
-        coEvery { api.getPokemonList(any()) } returns remoteList
-
-        // Mock detail fetch for concurrently fetching details in main branch logic
-        val remoteDto = PokemonDto(
-            id = 1,
-            name = "bulbasaur",
-            height = 7,
-            weight = 69,
-            sprites = SpritesDto(frontDefault = "front_url"),
-            types = emptyList()
+        coEvery { api.getPokemonDetail("bulbasaur") } returns PokemonDto(
+            id = 1, name = "bulbasaur", height = 7, weight = 69,
+            sprites = SpritesDto(frontDefault = "front_url"), types = emptyList()
         )
-        coEvery { api.getPokemonDetail("bulbasaur") } returns remoteDto
 
-        repository.getPokemonList(151).test {
-            // First emission: empty local list
-            val firstEmission = awaitItem()
-            assertThat(firstEmission).isEmpty()
-
-            // Second emission: list after API fetch and save
-            val secondEmission = awaitItem()
-            assertThat(secondEmission).hasSize(1)
-            assertThat(secondEmission[0].name).isEqualTo("bulbasaur")
-            
+        repository.getPokemonList(startId, endId).test {
+            assertThat(awaitItem()).isEmpty()
+            val second = awaitItem()
+            assertThat(second).hasSize(1)
+            assertThat(second[0].name).isEqualTo("bulbasaur")
             awaitComplete()
         }
 
-        coVerify(exactly = 1) { dao.clearPokemonList() }
         coVerify(exactly = 1) { dao.insertPokemonList(any()) }
     }
 
     @Test
-    fun getPokemonList_onlyEmitsLocalData_ifNotEmpty() = runTest {
-        // Mock local DB not empty
-        val localList = listOf(
-            PokemonListItemEntity(name = "bulbasaur", url = "url1")
+    fun getPokemonList_onlyEmitsLocalData_ifCacheComplete() = runTest {
+        val startId = 1
+        val endId = 3
+        // All 3 pokemon present → cache complete, no API call
+        val cached = listOf(
+            PokemonListItemEntity(name = "bulbasaur", url = "url1", id = 1),
+            PokemonListItemEntity(name = "ivysaur",   url = "url2", id = 2),
+            PokemonListItemEntity(name = "venusaur",  url = "url3", id = 3)
         )
-        coEvery { dao.getPokemonList() } returns localList
+        coEvery { dao.getPokemonInRange(startId, endId) } returns cached
 
-        repository.getPokemonList(151).test {
+        repository.getPokemonList(startId, endId).test {
             val result = awaitItem()
-            assertThat(result).hasSize(1)
-            assertThat(result[0].name).isEqualTo("bulbasaur")
+            assertThat(result).hasSize(3)
             awaitComplete()
         }
 
-        coVerify(exactly = 0) { api.getPokemonList(any()) }
+        coVerify(exactly = 0) { api.getPokemonList(any(), any()) }
     }
 
     @Test
