@@ -2,8 +2,11 @@ package com.example.pokeapitest.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.hasText
 import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.model.PokemonMove
 import com.example.pokeapitest.domain.model.PokemonType
@@ -57,6 +60,10 @@ class PokemonDetailScreenTest {
             }
         }
 
+        // Scroll to the moves section using the test tag of the LazyColumn
+        composeTestRule.onNodeWithTag("pokemon_detail_list")
+            .performScrollToNode(hasText("Moves (Sorted by Power)"))
+
         // Initially shows 10 moves
         composeTestRule.onNodeWithText("Move 1").assertIsDisplayed()
         composeTestRule.onNodeWithText("More... (5 more)").assertIsDisplayed()
@@ -64,11 +71,23 @@ class PokemonDetailScreenTest {
         // Expand
         composeTestRule.onNodeWithText("More... (5 more)").performClick()
         
+        composeTestRule.waitForIdle()
+
+        // Scroll to the new move if needed (it should be visible now)
+        composeTestRule.onNodeWithTag("pokemon_detail_list")
+            .performScrollToNode(hasText("Move 11"))
+            
         composeTestRule.onNodeWithText("Move 11").assertIsDisplayed()
         composeTestRule.onNodeWithText("Show Less").assertIsDisplayed()
         
         // Collapse
         composeTestRule.onNodeWithText("Show Less").performClick()
+        
+        composeTestRule.waitForIdle()
+        
+        composeTestRule.onNodeWithTag("pokemon_detail_list")
+            .performScrollToNode(hasText("More... (5 more)"))
+
         composeTestRule.onNodeWithText("More... (5 more)").assertIsDisplayed()
     }
 
@@ -80,6 +99,10 @@ class PokemonDetailScreenTest {
             }
         }
 
+        // Scroll to the varieties section
+        composeTestRule.onNodeWithTag("pokemon_detail_list")
+            .performScrollToNode(hasText("Other Varieties"))
+            
         composeTestRule.onNodeWithText("Other Varieties").assertIsDisplayed()
         composeTestRule.onNodeWithText("Charizard Mega").assertIsDisplayed()
     }
