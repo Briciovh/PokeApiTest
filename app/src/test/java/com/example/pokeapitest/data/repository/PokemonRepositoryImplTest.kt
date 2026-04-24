@@ -3,8 +3,11 @@ package com.example.pokeapitest.data.repository
 import app.cash.turbine.test
 import com.example.pokeapitest.data.local.PokemonDao
 import com.example.pokeapitest.data.local.entity.PokemonEntity
-import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
+import com.example.pokeapitest.data.local.entity.PokemonMoveEntity
+import com.example.pokeapitest.data.local.entity.PokemonVarietyEntity
+import com.example.pokeapitest.data.local.entity.PokemonWithDetails
+import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.data.remote.PokeApi
 import com.example.pokeapitest.data.remote.dto.MoveDetailDto
 import com.example.pokeapitest.data.remote.dto.MoveDto
@@ -90,20 +93,35 @@ class PokemonRepositoryImplTest {
     @Test
     fun getPokemonDetail_onlyEmitsLocalData_ifPresent() = runTest {
         val name = "bulbasaur"
-        val localEntity = PokemonEntity(
+        val pokemon = PokemonEntity(
             id = 1,
             name = name,
             height = 7,
             weight = 69,
             frontDefault = "front_url",
-            types = listOf(PokemonType.GRASS, PokemonType.POISON),
-            varieties = "bulbasaur|https://pokeapi.co/api/v2/pokemon/1/|true" +
-                "|https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" +
-                "|https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png",
-            moves = "tackle|40|normal"
+            types = listOf(PokemonType.GRASS, PokemonType.POISON)
         )
+        val varieties = listOf(
+            PokemonVarietyEntity(
+                pokemonId = 1,
+                name = "bulbasaur",
+                url = "https://pokeapi.co/api/v2/pokemon/1/",
+                isDefault = true,
+                imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
+                officialArtworkUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+            )
+        )
+        val moves = listOf(
+            PokemonMoveEntity(
+                pokemonId = 1,
+                name = "tackle",
+                power = 40,
+                type = PokemonType.NORMAL
+            )
+        )
+        val localWithDetails = PokemonWithDetails(pokemon, varieties, moves)
 
-        coEvery { dao.getPokemonByName(name) } returns localEntity
+        coEvery { dao.getPokemonByName(name) } returns localWithDetails
 
         repository.getPokemonDetail(name).test {
             // First emission from DB
@@ -150,7 +168,10 @@ class PokemonRepositoryImplTest {
             )
         )
 
-        coEvery { dao.getPokemonByName(name) } returns null andThen remoteDto.toEntity(remoteSpeciesDto, emptyList())
+        val entityData = remoteDto.toEntityData(remoteSpeciesDto, emptyList())
+        val withDetails = PokemonWithDetails(entityData.entity, entityData.varieties, entityData.moves)
+
+        coEvery { dao.getPokemonByName(name) } returns null andThen withDetails
         coEvery { api.getPokemonDetail(name) } returns remoteDto
         coEvery { api.getPokemonSpecies(name) } returns remoteSpeciesDto
 
@@ -162,20 +183,29 @@ class PokemonRepositoryImplTest {
             awaitComplete()
         }
 
-        coVerify(exactly = 1) { dao.insertPokemon(any()) }
+        coVerify(exactly = 1) { dao.insertFullPokemonDetail(any(), any(), any()) }
     }
 
     @Test
     fun getPokemonDetail_fallsBackToLocal_whenAPIFails() = runTest {
         val name = "pikachu"
-        val localEntity = PokemonEntity(
+        val pokemon = PokemonEntity(
             id = 25, name = name, height = 4, weight = 60,
-            frontDefault = null, types = listOf(PokemonType.ELECTRIC),
-            varieties = "pikachu|https://pokeapi.co/api/v2/pokemon/25/|true" +
-                "|${pokemonPixelArtUrl(25)}|${pokemonOfficialArtworkUrl(25)}",
-            moves = "" // empty moves triggers the API fetch path
+            frontDefault = null, types = listOf(PokemonType.ELECTRIC)
         )
-        coEvery { dao.getPokemonByName(name) } returns localEntity
+        val varieties = listOf(
+            PokemonVarietyEntity(
+                pokemonId = 25,
+                name = "pikachu",
+                url = "https://pokeapi.co/api/v2/pokemon/25/",
+                isDefault = true,
+                imageUrl = pokemonPixelArtUrl(25),
+                officialArtworkUrl = pokemonOfficialArtworkUrl(25)
+            )
+        )
+        val localWithDetails = PokemonWithDetails(pokemon, varieties, emptyList())
+
+        coEvery { dao.getPokemonByName(name) } returns localWithDetails
         coEvery { api.getPokemonDetail(name) } throws RuntimeException("Network error")
         coEvery { api.getPokemonSpecies(name) } throws RuntimeException("Network error")
 
@@ -186,7 +216,7 @@ class PokemonRepositoryImplTest {
             awaitComplete()
         }
 
-        coVerify(exactly = 0) { dao.insertPokemon(any()) }
+        coVerify(exactly = 0) { dao.insertFullPokemonDetail(any(), any(), any()) }
     }
 
     @Test

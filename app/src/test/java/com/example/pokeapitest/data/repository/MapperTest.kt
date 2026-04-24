@@ -2,6 +2,9 @@ package com.example.pokeapitest.data.repository
 
 import com.example.pokeapitest.data.local.entity.PokemonEntity
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
+import com.example.pokeapitest.data.local.entity.PokemonMoveEntity
+import com.example.pokeapitest.data.local.entity.PokemonVarietyEntity
+import com.example.pokeapitest.data.local.entity.PokemonWithDetails
 import com.example.pokeapitest.data.remote.dto.MoveDetailDto
 import com.example.pokeapitest.data.remote.dto.MoveDto
 import com.example.pokeapitest.data.remote.dto.MoveSlotDto
@@ -22,7 +25,7 @@ class MapperTest {
     // region PokemonDto.toEntity
 
     @Test
-    fun pokemonDto_toEntity_serializesMoves_correctly() {
+    fun pokemonDto_toEntityData_mapsMoves_correctly() {
         val dto = buildPokemonDto(id = 25, name = "pikachu")
         val species = buildSpeciesDto(id = 25, name = "pikachu", varietyUrl = "https://pokeapi.co/api/v2/pokemon/25/")
         val moveDetails = listOf(
@@ -30,50 +33,52 @@ class MapperTest {
             MoveDetailDto(id = 2, name = "growl",  power = null, type = MoveTypeDto("normal"))
         )
 
-        val entity = dto.toEntity(species, moveDetails)
+        val entityData = dto.toEntityData(species, moveDetails)
 
-        assertThat(entity.moves).isEqualTo("tackle|40|normal;growl|0|normal")
+        assertThat(entityData.moves).hasSize(2)
+        assertThat(entityData.moves[0].name).isEqualTo("tackle")
+        assertThat(entityData.moves[0].power).isEqualTo(40)
+        assertThat(entityData.moves[1].name).isEqualTo("growl")
+        assertThat(entityData.moves[1].power).isEqualTo(0)
     }
 
     @Test
-    fun pokemonDto_toEntity_handlesNullMovePower_asZero() {
-        val dto = buildPokemonDto(id = 1, name = "charmander")
-        val species = buildSpeciesDto(id = 1, name = "charmander", varietyUrl = "https://pokeapi.co/api/v2/pokemon/1/")
-        val moveDetails = listOf(
-            MoveDetailDto(id = 10, name = "growl", power = null, type = MoveTypeDto("normal"))
-        )
-
-        val entity = dto.toEntity(species, moveDetails)
-
-        assertThat(entity.moves).isEqualTo("growl|0|normal")
-    }
-
-    @Test
-    fun pokemonDto_toEntity_serializesVarieties_correctly() {
+    fun pokemonDto_toEntityData_mapsVarieties_correctly() {
         val dto = buildPokemonDto(id = 1, name = "bulbasaur")
         val species = buildSpeciesDto(id = 1, name = "bulbasaur", varietyUrl = "https://pokeapi.co/api/v2/pokemon/1/")
 
-        val entity = dto.toEntity(species, emptyList())
+        val entityData = dto.toEntityData(species, emptyList())
 
         val expectedPixel   = pokemonPixelArtUrl(1)
         val expectedArtwork = pokemonOfficialArtworkUrl(1)
-        assertThat(entity.varieties)
-            .isEqualTo("bulbasaur|https://pokeapi.co/api/v2/pokemon/1/|true|$expectedPixel|$expectedArtwork")
+        assertThat(entityData.varieties).hasSize(1)
+        assertThat(entityData.varieties[0].name).isEqualTo("bulbasaur")
+        assertThat(entityData.varieties[0].url).isEqualTo("https://pokeapi.co/api/v2/pokemon/1/")
+        assertThat(entityData.varieties[0].isDefault).isTrue()
+        assertThat(entityData.varieties[0].imageUrl).isEqualTo(expectedPixel)
+        assertThat(entityData.varieties[0].officialArtworkUrl).isEqualTo(expectedArtwork)
     }
 
     // endregion
 
-    // region PokemonEntity.toDomain
+    // region PokemonWithDetails.toDomain
 
     @Test
-    fun pokemonEntity_toDomain_parsesVarieties_correctly() {
-        val entity = buildPokemonEntity(
-            id = 1, name = "bulbasaur",
-            varieties = "bulbasaur|https://pokeapi.co/api/v2/pokemon/1/|true" +
-                "|${pokemonPixelArtUrl(1)}|${pokemonOfficialArtworkUrl(1)}"
+    fun pokemonWithDetails_toDomain_mapsVarieties_correctly() {
+        val pokemon = buildPokemonEntity(id = 1, name = "bulbasaur")
+        val varieties = listOf(
+            PokemonVarietyEntity(
+                pokemonId = 1,
+                name = "bulbasaur",
+                url = "https://pokeapi.co/api/v2/pokemon/1/",
+                isDefault = true,
+                imageUrl = pokemonPixelArtUrl(1),
+                officialArtworkUrl = pokemonOfficialArtworkUrl(1)
+            )
         )
+        val withDetails = PokemonWithDetails(pokemon, varieties, emptyList())
 
-        val domain = entity.toDomain()
+        val domain = withDetails.toDomain()
 
         val original = domain.varieties.first { !it.isShiny }
         assertThat(original.name).isEqualTo("bulbasaur")
@@ -84,14 +89,15 @@ class MapperTest {
     }
 
     @Test
-    fun pokemonEntity_toDomain_injectsShinyVariety_afterDefault() {
-        val entity = buildPokemonEntity(
-            id = 1, name = "bulbasaur",
-            varieties = "bulbasaur|url/1/|true|pixel1|artwork1;" +
-                        "bulbasaur-mega|url/10001/|false|pixel10001|artwork10001"
+    fun pokemonWithDetails_toDomain_injectsShinyVariety_afterDefault() {
+        val pokemon = buildPokemonEntity(id = 1, name = "bulbasaur")
+        val varieties = listOf(
+            PokemonVarietyEntity(1, "bulbasaur", "url/1/", true, "pixel1", "artwork1"),
+            PokemonVarietyEntity(1, "bulbasaur-mega", "url/10001/", false, "pixel10001", "artwork10001")
         )
+        val withDetails = PokemonWithDetails(pokemon, varieties, emptyList())
 
-        val domain = entity.toDomain()
+        val domain = withDetails.toDomain()
 
         // Expected order: [default, shiny, non-default]
         assertThat(domain.varieties).hasSize(3)
@@ -103,13 +109,14 @@ class MapperTest {
     }
 
     @Test
-    fun pokemonEntity_toDomain_injectsShinyVariety_atEnd_whenNoDefault() {
-        val entity = buildPokemonEntity(
-            id = 25, name = "pikachu",
-            varieties = "pikachu|url/25/|false|pixel25|artwork25"
+    fun pokemonWithDetails_toDomain_injectsShinyVariety_atEnd_whenNoDefault() {
+        val pokemon = buildPokemonEntity(id = 25, name = "pikachu")
+        val varieties = listOf(
+            PokemonVarietyEntity(25, "pikachu", "url/25/", false, "pixel25", "artwork25")
         )
+        val withDetails = PokemonWithDetails(pokemon, varieties, emptyList())
 
-        val domain = entity.toDomain()
+        val domain = withDetails.toDomain()
 
         assertThat(domain.varieties).hasSize(2)
         assertThat(domain.varieties[0].isShiny).isFalse()
@@ -117,13 +124,17 @@ class MapperTest {
     }
 
     @Test
-    fun pokemonEntity_toDomain_sortsMoves_byPowerDesc_thenNameAsc() {
-        val entity = buildPokemonEntity(
-            id = 1, name = "charmander",
-            moves = "zzz-move|50|fire;aaa-move|50|water;flamethrower|90|fire;scratch|40|normal"
+    fun pokemonWithDetails_toDomain_sortsMoves_byPowerDesc_thenNameAsc() {
+        val pokemon = buildPokemonEntity(id = 1, name = "charmander")
+        val moves = listOf(
+            PokemonMoveEntity(1, "zzz-move", 50, PokemonType.FIRE),
+            PokemonMoveEntity(1, "aaa-move", 50, PokemonType.WATER),
+            PokemonMoveEntity(1, "flamethrower", 90, PokemonType.FIRE),
+            PokemonMoveEntity(1, "scratch", 40, PokemonType.NORMAL)
         )
+        val withDetails = PokemonWithDetails(pokemon, emptyList(), moves)
 
-        val domain = entity.toDomain()
+        val domain = withDetails.toDomain()
 
         assertThat(domain.moves.map { it.name })
             .containsExactly("flamethrower", "aaa-move", "zzz-move", "scratch")
@@ -131,10 +142,11 @@ class MapperTest {
     }
 
     @Test
-    fun pokemonEntity_toDomain_parsesEmptyMoves_toEmptyList() {
-        val entity = buildPokemonEntity(id = 1, name = "bulbasaur", moves = "")
+    fun pokemonWithDetails_toDomain_handlesEmptyMoves() {
+        val pokemon = buildPokemonEntity(id = 1, name = "bulbasaur")
+        val withDetails = PokemonWithDetails(pokemon, emptyList(), emptyList())
 
-        val domain = entity.toDomain()
+        val domain = withDetails.toDomain()
 
         assertThat(domain.moves).isEmpty()
     }
@@ -186,18 +198,14 @@ class MapperTest {
 
     private fun buildPokemonEntity(
         id: Int,
-        name: String,
-        varieties: String = "",
-        moves: String = ""
+        name: String
     ) = PokemonEntity(
         id = id,
         name = name,
         height = 4,
         weight = 60,
         frontDefault = null,
-        types = emptyList(),
-        varieties = varieties,
-        moves = moves
+        types = emptyList()
     )
 
     // endregion

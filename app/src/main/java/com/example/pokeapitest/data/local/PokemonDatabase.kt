@@ -5,10 +5,17 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.pokeapitest.data.local.entity.PokemonEntity
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
+import com.example.pokeapitest.data.local.entity.PokemonMoveEntity
+import com.example.pokeapitest.data.local.entity.PokemonVarietyEntity
 
 @Database(
-    entities = [PokemonListItemEntity::class, PokemonEntity::class],
-    version = 5,
+    entities = [
+        PokemonListItemEntity::class,
+        PokemonEntity::class,
+        PokemonVarietyEntity::class,
+        PokemonMoveEntity::class
+    ],
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
