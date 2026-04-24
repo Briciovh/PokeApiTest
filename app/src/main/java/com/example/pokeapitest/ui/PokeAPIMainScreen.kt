@@ -46,6 +46,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -119,7 +120,7 @@ fun PokeAPINavHost() {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                ModalDrawerSheet {
+                ModalDrawerSheet(modifier = Modifier.testTag("ModalDrawerSheet")) {
                     Text(
                         text = "Pokédex",
                         modifier = Modifier.padding(16.dp),
@@ -159,7 +160,7 @@ fun PokeAPINavHost() {
                     TopAppBar(
                         title = {
                             Text(
-                                when {
+                                text = when {
                                     currentRoute?.startsWith("pokemon_list") == true -> {
                                         val gen = navBackStackEntry?.arguments?.getInt("gen") ?: 1
                                         Generations.find { it.id == gen }?.displayName ?: "Pokédex"
@@ -167,7 +168,8 @@ fun PokeAPINavHost() {
                                     currentRoute == Screen.Settings.route -> "Settings"
                                     currentRoute?.startsWith("pokemon_detail") == true -> "Details"
                                     else -> "Pokédex"
-                                }
+                                },
+                                modifier = Modifier.testTag("top_app_bar_title")
                             )
                         },
                         navigationIcon = {

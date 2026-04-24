@@ -6,6 +6,10 @@ import com.example.pokeapitest.data.local.entity.PokemonEntity
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
 import com.example.pokeapitest.data.remote.PokeApi
+import com.example.pokeapitest.data.remote.dto.MoveDetailDto
+import com.example.pokeapitest.data.remote.dto.MoveDto
+import com.example.pokeapitest.data.remote.dto.MoveSlotDto
+import com.example.pokeapitest.data.remote.dto.MoveTypeDto
 import com.example.pokeapitest.data.remote.dto.PokemonDto
 import com.example.pokeapitest.data.remote.dto.PokemonListDto
 import com.example.pokeapitest.data.remote.dto.PokemonListItemDto
@@ -13,6 +17,8 @@ import com.example.pokeapitest.data.remote.dto.PokemonResourceDto
 import com.example.pokeapitest.data.remote.dto.PokemonSpeciesDto
 import com.example.pokeapitest.data.remote.dto.PokemonVarietyDto
 import com.example.pokeapitest.data.remote.dto.SpritesDto
+import com.example.pokeapitest.util.pokemonOfficialArtworkUrl
+import com.example.pokeapitest.util.pokemonPixelArtUrl
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -46,7 +52,7 @@ class PokemonRepositoryImplTest {
         )
         coEvery { api.getPokemonDetail("bulbasaur") } returns PokemonDto(
             id = 1, name = "bulbasaur", height = 7, weight = 69,
-            sprites = SpritesDto(frontDefault = "front_url"), types = emptyList()
+            sprites = SpritesDto(frontDefault = "front_url"), types = emptyList(), moves = emptyList()
         )
 
         repository.getPokemonList(startId, endId).test {
@@ -93,7 +99,8 @@ class PokemonRepositoryImplTest {
             types = listOf(PokemonType.GRASS, PokemonType.POISON),
             varieties = "bulbasaur|https://pokeapi.co/api/v2/pokemon/1/|true" +
                 "|https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" +
-                "|https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                "|https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png",
+            moves = "tackle|40|normal"
         )
 
         coEvery { dao.getPokemonByName(name) } returns localEntity
@@ -105,7 +112,7 @@ class PokemonRepositoryImplTest {
             assertThat(firstEmission?.imageUrl).isEqualTo("front_url")
             assertThat(firstEmission?.officialArtworkUrl)
                 .isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png")
-            assertThat(firstEmission?.varieties).hasSize(1)
+            assertThat(firstEmission?.varieties).hasSize(2) // original + injected shiny
             assertThat(firstEmission?.varieties?.get(0)?.name).isEqualTo("bulbasaur")
             assertThat(firstEmission?.varieties?.get(0)?.imageUrl)
                 .isEqualTo("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png")
@@ -128,7 +135,8 @@ class PokemonRepositoryImplTest {
             height = 7,
             weight = 69,
             sprites = SpritesDto(frontDefault = "front_url"),
-            types = emptyList()
+            types = emptyList(),
+            moves = emptyList()
         )
         
         val remoteSpeciesDto = PokemonSpeciesDto(
@@ -142,7 +150,7 @@ class PokemonRepositoryImplTest {
             )
         )
 
-        coEvery { dao.getPokemonByName(name) } returns null andThen remoteDto.toEntity(remoteSpeciesDto)
+        coEvery { dao.getPokemonByName(name) } returns null andThen remoteDto.toEntity(remoteSpeciesDto, emptyList())
         coEvery { api.getPokemonDetail(name) } returns remoteDto
         coEvery { api.getPokemonSpecies(name) } returns remoteSpeciesDto
 
@@ -155,5 +163,102 @@ class PokemonRepositoryImplTest {
         }
 
         coVerify(exactly = 1) { dao.insertPokemon(any()) }
+    }
+
+    @Test
+    fun getPokemonDetail_fallsBackToLocal_whenAPIFails() = runTest {
+        val name = "pikachu"
+        val localEntity = PokemonEntity(
+            id = 25, name = name, height = 4, weight = 60,
+            frontDefault = null, types = listOf(PokemonType.ELECTRIC),
+            varieties = "pikachu|https://pokeapi.co/api/v2/pokemon/25/|true" +
+                "|${pokemonPixelArtUrl(25)}|${pokemonOfficialArtworkUrl(25)}",
+            moves = "" // empty moves triggers the API fetch path
+        )
+        coEvery { dao.getPokemonByName(name) } returns localEntity
+        coEvery { api.getPokemonDetail(name) } throws RuntimeException("Network error")
+        coEvery { api.getPokemonSpecies(name) } throws RuntimeException("Network error")
+
+        repository.getPokemonDetail(name).test {
+            val result = awaitItem()
+            assertThat(result?.name).isEqualTo(name)
+            assertThat(result?.moves).isEmpty()
+            awaitComplete()
+        }
+
+        coVerify(exactly = 0) { dao.insertPokemon(any()) }
+    }
+
+    @Test
+    fun getPokemonDetail_fetchesMoveDetailsInParallel_forEachMove() = runTest {
+        val name = "pikachu"
+        val remoteDto = PokemonDto(
+            id = 25, name = name, height = 4, weight = 60,
+            sprites = SpritesDto(frontDefault = null),
+            types = emptyList(),
+            moves = listOf(
+                MoveSlotDto(MoveDto(name = "tackle", url = "tackle-url")),
+                MoveSlotDto(MoveDto(name = "growl",  url = "growl-url"))
+            )
+        )
+        val speciesDto = PokemonSpeciesDto(
+            id = 25, name = name,
+            varieties = listOf(
+                PokemonVarietyDto(
+                    isDefault = true,
+                    pokemon = PokemonResourceDto(name = name, url = "https://pokeapi.co/api/v2/pokemon/25/")
+                )
+            )
+        )
+
+        coEvery { dao.getPokemonByName(name) } returns null
+        coEvery { api.getPokemonDetail(name) } returns remoteDto
+        coEvery { api.getPokemonSpecies(name) } returns speciesDto
+        coEvery { api.getMoveDetail("tackle") } returns MoveDetailDto(1, "tackle", 40, MoveTypeDto("normal"))
+        coEvery { api.getMoveDetail("growl")  } returns MoveDetailDto(2, "growl",  null, MoveTypeDto("normal"))
+
+        repository.getPokemonDetail(name).test {
+            awaitItem()
+            awaitComplete()
+        }
+
+        coVerify(exactly = 1) { api.getMoveDetail("tackle") }
+        coVerify(exactly = 1) { api.getMoveDetail("growl") }
+    }
+
+    @Test
+    fun getPokemonList_skipsItem_whenDetailFetchThrows() = runTest {
+        val startId = 1
+        val endId = 2
+        val afterInsert = listOf(
+            PokemonListItemEntity(name = "bulbasaur", url = "url1", id = 1, primaryType = PokemonType.GRASS),
+            PokemonListItemEntity(name = "bad-mon",   url = "url2")
+        )
+
+        coEvery { dao.getPokemonInRange(startId, endId) } returns emptyList() andThen afterInsert
+        coEvery { api.getPokemonList(limit = 2, offset = 0) } returns PokemonListDto(
+            results = listOf(
+                PokemonListItemDto(name = "bulbasaur", url = "url1"),
+                PokemonListItemDto(name = "bad-mon",   url = "url2")
+            )
+        )
+        coEvery { api.getPokemonDetail("bulbasaur") } returns PokemonDto(
+            id = 1, name = "bulbasaur", height = 7, weight = 69,
+            sprites = SpritesDto(frontDefault = null), types = emptyList(), moves = emptyList()
+        )
+        coEvery { api.getPokemonDetail("bad-mon") } throws RuntimeException("not found")
+
+        repository.getPokemonList(startId, endId).test {
+            assertThat(awaitItem()).isEmpty()
+            assertThat(awaitItem()).hasSize(2)
+            awaitComplete()
+        }
+
+        coVerify(exactly = 1) {
+            dao.insertPokemonList(match { list ->
+                list.any { it.name == "bulbasaur" && it.id == 1 } &&
+                list.any { it.name == "bad-mon" && it.id == 0 }
+            })
+        }
     }
 }
