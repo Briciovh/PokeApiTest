@@ -5,6 +5,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.pokeapitest.data.local.entity.PokemonEntity
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
+import com.example.pokeapitest.data.local.entity.PokemonMoveEntity
+import com.example.pokeapitest.data.local.entity.PokemonVarietyEntity
 import com.example.pokeapitest.domain.model.PokemonType
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
@@ -78,16 +80,25 @@ class PokemonDaoTest {
             height = 4,
             weight = 60,
             frontDefault = "url",
-            types = listOf(PokemonType.ELECTRIC),
-            varieties = "var1|url|true",
-            moves = "move1|power|type"
+            types = listOf(PokemonType.ELECTRIC)
         )
-        dao.insertPokemon(pokemon)
+        val varieties = listOf(
+            PokemonVarietyEntity(25, "pikachu", "url", true, "sprite", "artwork")
+        )
+        val moves = listOf(
+            PokemonMoveEntity(25, "thunderbolt", 90, PokemonType.ELECTRIC)
+        )
+
+        dao.insertFullPokemonDetail(pokemon, varieties, moves)
 
         val result = dao.getPokemonByName("pikachu")
         assertThat(result).isNotNull()
-        assertThat(result?.id).isEqualTo(25)
-        assertThat(result?.name).isEqualTo("pikachu")
+        assertThat(result?.pokemon?.id).isEqualTo(25)
+        assertThat(result?.pokemon?.name).isEqualTo("pikachu")
+        assertThat(result?.varieties).hasSize(1)
+        assertThat(result?.varieties?.first()?.name).isEqualTo("pikachu")
+        assertThat(result?.moves).hasSize(1)
+        assertThat(result?.moves?.first()?.name).isEqualTo("thunderbolt")
     }
 
     @Test

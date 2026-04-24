@@ -3,6 +3,9 @@ package com.example.pokeapitest.data.repository
 import com.example.pokeapitest.data.local.PokemonDao
 import com.example.pokeapitest.data.local.entity.PokemonEntity
 import com.example.pokeapitest.data.local.entity.PokemonListItemEntity
+import com.example.pokeapitest.data.local.entity.PokemonMoveEntity
+import com.example.pokeapitest.data.local.entity.PokemonVarietyEntity
+import com.example.pokeapitest.data.local.entity.PokemonWithDetails
 import com.example.pokeapitest.data.remote.PokeApi
 import com.example.pokeapitest.data.remote.dto.MoveDetailDto
 import com.example.pokeapitest.data.remote.dto.PokemonDto
@@ -98,8 +101,8 @@ class PokemonRepositoryImpl @Inject constructor(
                     }
                 }.awaitAll().filterNotNull()
 
-                val entity = pokemonDto.toEntity(speciesDto, moveDetails)
-                dao.insertPokemon(entity)
+                val (entity, varieties, moves) = pokemonDto.toEntityData(speciesDto, moveDetails)
+                dao.insertFullPokemonDetail(entity, varieties, moves)
                 emit(dao.getPokemonByName(name)?.toDomain())
             }
         } catch (e: Exception) {
@@ -110,63 +113,88 @@ class PokemonRepositoryImpl @Inject constructor(
 }
 
 // Mapper extensions
-fun PokemonDto.toEntity(species: PokemonSpeciesDto, moveDetails: List<MoveDetailDto>) = PokemonEntity(
-    id = id,
-    name = name,
-    height = height,
-    weight = weight,
-    frontDefault = sprites.frontDefault,
-    types = pokemonTypes,
-    varieties = species.varieties.joinToString(";") { variety ->
+data class PokemonEntityData(
+    val entity: PokemonEntity,
+    val varieties: List<PokemonVarietyEntity>,
+    val moves: List<PokemonMoveEntity>
+)
+
+fun PokemonDto.toEntityData(
+    species: PokemonSpeciesDto,
+    moveDetails: List<MoveDetailDto>
+): PokemonEntityData {
+    val entity = PokemonEntity(
+        id = id,
+        name = name,
+        height = height,
+        weight = weight,
+        frontDefault = sprites.frontDefault,
+        types = pokemonTypes
+    )
+
+    val varietyEntities = species.varieties.map { variety ->
         val varId = variety.pokemon.url.split("/").filter { it.isNotEmpty() }.lastOrNull()?.toIntOrNull()
         val pixelUrl = varId?.let { pokemonPixelArtUrl(it) } ?: ""
         val artworkUrl = varId?.let { pokemonOfficialArtworkUrl(it) } ?: ""
-        "${variety.pokemon.name}|${variety.pokemon.url}|${variety.isDefault}|$pixelUrl|$artworkUrl"
-    },
-    moves = moveDetails.joinToString(";") { "${it.name}|${it.power ?: 0}|${it.type.name}" }
-)
+        PokemonVarietyEntity(
+            pokemonId = id,
+            name = variety.pokemon.name,
+            url = variety.pokemon.url,
+            isDefault = variety.isDefault,
+            imageUrl = pixelUrl,
+            officialArtworkUrl = artworkUrl
+        )
+    }
 
-fun PokemonEntity.toDomain() = PokemonDetail(
-    id = id,
-    name = name,
-    height = height,
-    weight = weight,
-    imageUrl = frontDefault,
-    officialArtworkUrl = pokemonOfficialArtworkUrl(id),
-    types = types,
-    varieties = varieties.split(";")
-        .filter { it.isNotEmpty() }
-        .map {
-            val parts = it.split("|")
-            PokemonVariety(
-                name = parts[0],
-                url = parts[1],
-                isDefault = parts[2].toBoolean(),
-                imageUrl = parts.getOrNull(3),
-                officialArtworkUrl = parts.getOrNull(4)
-            )
-        }.let { list ->
-            val shiny = PokemonVariety(
-                name = "$name-shiny",
-                url = "",
-                isDefault = false,
-                imageUrl = pokemonPixelArtShinyUrl(id),
-                officialArtworkUrl = pokemonOfficialArtworkShinyUrl(id),
-                isShiny = true
-            )
-            val defaultIndex = list.indexOfFirst { it.isDefault }
-            if (defaultIndex != -1) {
-                list.toMutableList().apply { add(defaultIndex + 1, shiny) }
-            } else {
-                list + shiny
-            }
-        },
-    moves = if (moves.isEmpty()) emptyList() else moves.split(";").map {
-        val parts = it.split("|")
+    val moveEntities = moveDetails.map {
+        PokemonMoveEntity(
+            pokemonId = id,
+            name = it.name,
+            power = it.power ?: 0,
+            type = PokemonType.fromString(it.type.name)
+        )
+    }
+
+    return PokemonEntityData(entity, varietyEntities, moveEntities)
+}
+
+fun PokemonWithDetails.toDomain() = PokemonDetail(
+    id = pokemon.id,
+    name = pokemon.name,
+    height = pokemon.height,
+    weight = pokemon.weight,
+    imageUrl = pokemon.frontDefault,
+    officialArtworkUrl = pokemonOfficialArtworkUrl(pokemon.id),
+    types = pokemon.types,
+    varieties = varieties.map {
+        PokemonVariety(
+            name = it.name,
+            url = it.url,
+            isDefault = it.isDefault,
+            imageUrl = it.imageUrl,
+            officialArtworkUrl = it.officialArtworkUrl
+        )
+    }.let { list ->
+        val shiny = PokemonVariety(
+            name = "${pokemon.name}-shiny",
+            url = "",
+            isDefault = false,
+            imageUrl = pokemonPixelArtShinyUrl(pokemon.id),
+            officialArtworkUrl = pokemonOfficialArtworkShinyUrl(pokemon.id),
+            isShiny = true
+        )
+        val defaultIndex = list.indexOfFirst { it.isDefault }
+        if (defaultIndex != -1) {
+            list.toMutableList().apply { add(defaultIndex + 1, shiny) }
+        } else {
+            list + shiny
+        }
+    },
+    moves = moves.map {
         PokemonMove(
-            name = parts[0],
-            power = parts[1].toInt(),
-            type = PokemonType.fromString(parts[2])
+            name = it.name,
+            power = it.power,
+            type = it.type
         )
     }.sortedWith(compareByDescending<PokemonMove> { it.power }.thenBy { it.name })
 )

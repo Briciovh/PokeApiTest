@@ -95,6 +95,6 @@ class RepositoryIntegrationTest {
 
         val cached = dao.getPokemonByName(name)
         assertThat(cached).isNotNull()
-        assertThat(cached?.id).isEqualTo(4)
+        assertThat(cached?.pokemon?.id).isEqualTo(4)
     }
 }
