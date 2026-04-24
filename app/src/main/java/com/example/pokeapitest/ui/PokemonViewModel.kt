@@ -34,7 +34,9 @@ class PokemonViewModel @Inject constructor(
             try {
                 getPokemonListUseCase(startId, endId).collectLatest { items ->
                     _pokemonList.value = items
-                    _isLoading.value = false
+                    if (items.isNotEmpty()) {
+                        _isLoading.value = false
+                    }
                 }
             } catch (e: Exception) {
                 _errorChannel.emit("Failed to load Pokemon list: ${e.message}")

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pokeapitest.data.repository.SettingsRepository
 import com.example.pokeapitest.domain.model.AppPreferences
 import com.example.pokeapitest.domain.model.ImagePreference
+import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.domain.model.ThemePreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,6 +35,12 @@ class SettingsViewModel @Inject constructor(
     fun updateImagePreference(imagePreference: ImagePreference) {
         viewModelScope.launch {
             repository.updateImagePreference(imagePreference)
+        }
+    }
+
+    fun updatePreferredType(type: PokemonType) {
+        viewModelScope.launch {
+            repository.updatePreferredType(type)
         }
     }
 }
