@@ -6,9 +6,10 @@ import com.example.pokeapitest.domain.model.PokemonListItem
 import com.example.pokeapitest.domain.model.PokemonType
 import com.example.pokeapitest.domain.use_case.GetPokemonListUseCase
 import com.google.common.truth.Truth.assertThat
-import io.mockk.*
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -47,16 +48,26 @@ class PokemonViewModelTest {
 
     @Test
     fun loadPokemonByGeneration_emitsErrorMessage_onFailure() = runTest {
-        val errorMessage = "Network error"
-        coEvery { getPokemonListUseCase(any(), any()) } returns flow { throw Exception(errorMessage) }
+        coEvery { getPokemonListUseCase(any(), any()) } returns flow { throw Exception("Network error") }
 
         viewModel.loadPokemonByGeneration(1, 151)
 
         viewModel.errorChannel.test {
             val error = awaitItem()
-            assertThat(error).contains(errorMessage)
+            assertThat(error).contains("Failed to load generation")
+            assertThat(error).contains("Something went wrong")
         }
 
         assertThat(viewModel.isLoading.value).isFalse()
+    }
+
+    @Test
+    fun retry_reloadsLastGeneration() = runTest {
+        coEvery { getPokemonListUseCase(1, 151) } returns flowOf(emptyList())
+
+        viewModel.loadPokemonByGeneration(1, 151)
+        viewModel.retry()
+
+        coVerify(exactly = 2) { getPokemonListUseCase(1, 151) }
     }
 }

@@ -30,8 +30,10 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -221,7 +223,12 @@ fun PokeAPINavHost() {
 
                         LaunchedEffect(key1 = true) {
                             viewModel.errorChannel.collectLatest { error ->
-                                snackbarHostState.showSnackbar(error)
+                                val result = snackbarHostState.showSnackbar(
+                                    message = error,
+                                    actionLabel = "Retry",
+                                    duration = SnackbarDuration.Long
+                                )
+                                if (result == SnackbarResult.ActionPerformed) viewModel.retry()
                             }
                         }
 
@@ -244,7 +251,12 @@ fun PokeAPINavHost() {
 
                         LaunchedEffect(key1 = true) {
                             viewModel.errorChannel.collectLatest { error ->
-                                snackbarHostState.showSnackbar(error)
+                                val result = snackbarHostState.showSnackbar(
+                                    message = error,
+                                    actionLabel = "Retry",
+                                    duration = SnackbarDuration.Long
+                                )
+                                if (result == SnackbarResult.ActionPerformed) viewModel.retry()
                             }
                         }
 

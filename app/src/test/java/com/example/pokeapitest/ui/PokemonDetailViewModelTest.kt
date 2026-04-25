@@ -6,6 +6,7 @@ import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.use_case.GetPokemonDetailUseCase
 import com.google.common.truth.Truth.assertThat
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
@@ -52,15 +53,26 @@ class PokemonDetailViewModelTest {
     @Test
     fun loadPokemonDetail_emitsErrorMessage_onFailure() = runTest {
         val pokemonName = "unknown"
-        val errorMessage = "Not found"
-        coEvery { getPokemonDetailUseCase(any()) } returns flow { throw Exception(errorMessage) }
+        coEvery { getPokemonDetailUseCase(any()) } returns flow { throw Exception("Not found") }
 
         viewModel.errorChannel.test {
             viewModel.loadPokemonDetail(pokemonName)
             val error = awaitItem()
-            assertThat(error).contains(errorMessage)
+            assertThat(error).contains(pokemonName)
+            assertThat(error).contains("Something went wrong")
         }
 
         assertThat(viewModel.isLoading.value).isFalse()
+    }
+
+    @Test
+    fun retry_reloadsLastPokemon() = runTest {
+        val pokemonName = "pikachu"
+        coEvery { getPokemonDetailUseCase(pokemonName) } returns flowOf(null)
+
+        viewModel.loadPokemonDetail(pokemonName)
+        viewModel.retry()
+
+        coVerify(exactly = 2) { getPokemonDetailUseCase(pokemonName) }
     }
 }
