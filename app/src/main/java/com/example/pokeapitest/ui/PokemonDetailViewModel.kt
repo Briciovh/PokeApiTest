@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pokeapitest.domain.model.PokemonDetail
 import com.example.pokeapitest.domain.use_case.GetPokemonDetailUseCase
+import com.example.pokeapitest.util.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +29,18 @@ class PokemonDetailViewModel @Inject constructor(
     private val _errorChannel = MutableSharedFlow<String>(replay = 1)
     val errorChannel: SharedFlow<String> = _errorChannel.asSharedFlow()
 
+    private var lastPokemonName = ""
+
     fun loadPokemonDetail(name: String) {
+        lastPokemonName = name
+        doLoad(name)
+    }
+
+    fun retry() {
+        if (lastPokemonName.isNotEmpty()) doLoad(lastPokemonName)
+    }
+
+    private fun doLoad(name: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -39,7 +51,7 @@ class PokemonDetailViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                _errorChannel.emit("Failed to load Pokemon detail: ${e.message}")
+                _errorChannel.emit("Could not load $name: ${e.toUserMessage()}")
                 _isLoading.value = false
             }
         }
