@@ -246,7 +246,7 @@ fun PokeAPINavHost() {
                         route = Screen.PokemonDetail.route,
                         arguments = listOf(navArgument("name") { type = NavType.StringType })
                     ) { backStackEntry ->
-                        val name = backStackEntry.arguments?.getString("name") ?: ""
+                        val name = backStackEntry.arguments?.getString("name") ?: return@composable
                         val viewModel: PokemonDetailViewModel = hiltViewModel()
 
                         LaunchedEffect(key1 = true) {
